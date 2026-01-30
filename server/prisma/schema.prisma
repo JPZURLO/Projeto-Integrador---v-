@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model glicose {
+  id           Int              @id @default(autoincrement())
+  usuario_id   Int?
+  valor_mgdl   Decimal?         @db.Decimal(5, 2)
+  periodo      glicose_periodo?
+  data_leitura DateTime?        @default(now()) @db.DateTime(0)
+  usuarios     usuarios?        @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "glicose_ibfk_1")
+
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model hidratacao {
+  id            Int       @id @default(autoincrement())
+  usuario_id    Int?
+  quantidade_ml Int?
+  data_hora     DateTime? @default(now()) @db.DateTime(0)
+  usuarios      usuarios? @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "hidratacao_ibfk_1")
+
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model medicamentos {
+  id               Int       @id @default(autoincrement())
+  usuario_id       Int?
+  nome_remedio     String?   @db.VarChar(100)
+  dosagem          String?   @db.VarChar(50)
+  horario_agendado DateTime? @db.Time(0)
+  usuarios         usuarios? @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "medicamentos_ibfk_1")
+
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model recuperacao_senha {
+  id         Int       @id @default(autoincrement())
+  usuario_id Int?
+  token      String    @db.VarChar(255)
+  expira_em  DateTime  @db.DateTime(0)
+  usuarios   usuarios? @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "recuperacao_senha_ibfk_1")
+
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model sinais_vitais {
+  id                 Int       @id @default(autoincrement())
+  usuario_id         Int?
+  batimento_cardiaco Int?
+  pressao_sistolica  Int?
+  pressao_diastolica Int?
+  data_leitura       DateTime? @default(now()) @db.DateTime(0)
+  usuarios           usuarios? @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sinais_vitais_ibfk_1")
+
+  @@index([usuario_id], map: "usuario_id")
+}
+
+model usuarios {
+  id                Int                    @id @default(autoincrement())
+  nome              String                 @db.VarChar(100)
+  email             String                 @unique(map: "email")
+  senha             String                 @db.VarChar(255)
+  cpf             String   @unique // Adicionado
+  data_nascimento String?           // Adicionado (opcional como String para facilitar a máscara)
+  tipo_usuario      usuarios_tipo_usuario? @default(idoso)
+  criado_em         DateTime?              @default(now()) @db.Timestamp(0)
+  glicose           glicose[]
+  hidratacao        hidratacao[]
+  medicamentos      medicamentos[]
+  recuperacao_senha recuperacao_senha[]
+  sinais_vitais     sinais_vitais[]
+}
+
+enum glicose_periodo {
+  jejum
+  pos_prandial
+  antes_dormir
+}
+
+enum usuarios_tipo_usuario {
+  idoso
+  cuidador
+}
