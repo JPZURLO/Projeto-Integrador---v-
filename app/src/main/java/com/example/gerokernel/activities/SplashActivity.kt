@@ -14,7 +14,7 @@ class SplashActivity : AppCompatActivity() {
 
         // Timer de 3 segundos para dar um ar profissional ao PI-V
         Handler(Looper.getMainLooper()).postDelayed({
-            val intent = Intent(this, CadastroActivity::class.java)
+            val intent = Intent(this, LoginActivity::class.java)
             startActivity(intent)
             finish() // Fecha a splash para o idoso não voltar nela ao clicar em "voltar"
         }, 3000)

@@ -4,15 +4,20 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.gerokernel.R
 import com.example.gerokernel.api.RetrofitClient
 import com.exemplo.gerokernel.models.User
 import com.google.android.material.textfield.TextInputEditText
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class CadastroActivity : AppCompatActivity() {
 
@@ -20,7 +25,7 @@ class CadastroActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cadastro)
 
-        // 1. Inicializa os componentes do layout profissional
+        // 1. Inicializa os componentes (Foco em acessibilidade)
         val editNome = findViewById<TextInputEditText>(R.id.editNome)
         val editEmail = findViewById<TextInputEditText>(R.id.editEmail)
         val editCpf = findViewById<TextInputEditText>(R.id.editCpf)
@@ -29,11 +34,19 @@ class CadastroActivity : AppCompatActivity() {
         val checkMostrarSenha = findViewById<CheckBox>(R.id.checkMostrarSenha)
         val btnFinalizar = findViewById<Button>(R.id.btnFinalizar)
 
-        // 2. Aplica as Máscaras (Usabilidade para o idoso)
+        // Novos botões de navegação
+        val btnSetaVoltar = findViewById<ImageButton>(R.id.btnSetaVoltar)
+        val btnVoltarLogin = findViewById<Button>(R.id.btnVoltarLogin)
+
+        // 2. Navegação de volta para o Login
+        btnSetaVoltar.setOnClickListener { finish() }
+        btnVoltarLogin.setOnClickListener { finish() }
+
+        // 3. Aplica as Máscaras para facilitar o preenchimento
         aplicaMascara(editCpf, "###.###.###-##")
         aplicaMascara(editDataNasc, "##/##/####")
 
-        // 3. Lógica de Mostrar Senha
+        // 4. Lógica de Mostrar Senha (Reduz erro do idoso)
         checkMostrarSenha.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 editSenha.transformationMethod = null
@@ -43,45 +56,44 @@ class CadastroActivity : AppCompatActivity() {
             editSenha.setSelection(editSenha.text?.length ?: 0)
         }
 
-        // 4. Clique do Botão (A ponte para o MySQL 8)
+        // 5. Clique do Botão (Envio para Node.js + MySQL 8)
         btnFinalizar.setOnClickListener {
-            val nome = editNome.text.toString()
-            val email = editEmail.text.toString()
-            val cpf = editCpf.text.toString()
-            val dataNasc = editDataNasc.text.toString()
-            val senha = editSenha.text.toString()
+            val nome = editNome.text.toString().trim()
+            val email = editEmail.text.toString().trim()
+            val cpf = editCpf.text.toString().trim()
+            val dataNasc = editDataNasc.text.toString().trim()
+            val senha = editSenha.text.toString().trim()
 
-            if (nome.isNotEmpty() && email.isNotEmpty() && senha.isNotEmpty()) {
-                Toast.makeText(this, "Enviando para o servidor...", Toast.LENGTH_SHORT).show()
+            // Validação básica profissional
+            if (nome.isNotEmpty() && email.isNotEmpty() && senha.isNotEmpty() && cpf.length == 14) {
+                Toast.makeText(this, "Salvando seus dados...", Toast.LENGTH_SHORT).show()
 
-                // Criamos o objeto com os dados (Certifique-se de ter a classe User criada)
                 val novoUsuario = User(nome, email, senha, cpf, dataNasc, "IDOSO")
 
-                // DISPARAMOS A CHAMADA REAL VIA RETROFIT
-                RetrofitClient.instance.cadastrarUsuario(novoUsuario).enqueue(object : retrofit2.Callback<Void> {
-                    override fun onResponse(call: retrofit2.Call<Void>, response: retrofit2.Response<Void>) {
+                // Chamada via Retrofit
+                RetrofitClient.instance.cadastrarUsuario(novoUsuario).enqueue(object : Callback<Void> {
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
                         if (response.isSuccessful) {
-                            Toast.makeText(this@CadastroActivity, "Cadastro realizado com sucesso!", Toast.LENGTH_LONG).show()
-                            finish() // Fecha a tela de cadastro
+                            Toast.makeText(this@CadastroActivity, "Cadastro realizado! Agora faça seu login.", Toast.LENGTH_LONG).show()
+                            finish() // Retorna para a LoginActivity
                         } else {
-                            Toast.makeText(this@CadastroActivity, "Erro no servidor: ${response.code()}", Toast.LENGTH_LONG).show()
+                            Log.e("GEROKERNEL", "Erro ${response.code()}: ${response.errorBody()?.string()}")
+                            Toast.makeText(this@CadastroActivity, "Erro no servidor. Tente novamente.", Toast.LENGTH_LONG).show()
                         }
                     }
 
-                    override fun onFailure(call: retrofit2.Call<Void>, t: Throwable) {
-                        // Se cair aqui, olhe o Logcat! Pode ser o IP 10.0.2.2
-                        android.util.Log.e("ERRO_GEROKERNEL", "Falha de rede: ${t.message}")
-                        Toast.makeText(this@CadastroActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_LONG).show()
+                    override fun onFailure(call: Call<Void>, t: Throwable) {
+                        Log.e("ERRO_GEROKERNEL", "Falha: ${t.message}")
+                        Toast.makeText(this@CadastroActivity, "Sem conexão com o servidor.", Toast.LENGTH_LONG).show()
                     }
                 })
-
             } else {
-                Toast.makeText(this, "Preencha os campos obrigatórios!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Por favor, preencha todos os campos corretamente.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    // Função de Máscara Genérica (CPF e Data)
+    // Função de Máscara Genérica
     private fun aplicaMascara(editText: EditText, mask: String) {
         editText.addTextChangedListener(object : TextWatcher {
             private var isUpdating = false
