@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Configure o transportador (Mantenha sua Senha de App aqui)
+// 1. Configure o transportador
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   debug: true,
@@ -21,7 +21,19 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================================
-// ROTA 1: CADASTRO (Já existia)
+// ROTA NOVA: O "TRAMPOLIM" (Bypass do Gmail) 🚀
+// O e-mail clica aqui (HTTP) -> Node.js -> Redireciona pro App (Deep Link)
+// ==========================================
+app.get('/abrir-app', (req, res) => {
+    const email = req.query.email;
+
+    // O servidor manda o celular abrir o App
+    console.log(`🦘 TRAMPOLIM: Redirecionando ${email} para o App...`);
+    res.redirect(`gerokernel://redefinir?email=${email}`);
+});
+
+// ==========================================
+// ROTA 1: CADASTRO
 // ==========================================
 app.post('/cadastro', async (req, res) => {
   console.log("==> CADASTRO: Dados recebidos:", req.body);
@@ -35,7 +47,6 @@ app.post('/cadastro', async (req, res) => {
       }
     });
 
-    // Envia e-mail de boas-vindas
     await transporter.sendMail({
       from: '"GeroKernel" <jpzurlo.jz@gmail.com>',
       to: email,
@@ -51,7 +62,7 @@ app.post('/cadastro', async (req, res) => {
 });
 
 // ==========================================
-// ROTA 2: LOGIN (Já existia)
+// ROTA 2: LOGIN
 // ==========================================
 app.post('/login', async (req, res) => {
   const { email, senha } = req.body;
@@ -73,40 +84,41 @@ app.post('/login', async (req, res) => {
 });
 
 // ==========================================
-// ROTA 3: RECUPERAR SENHA (NOVA! 🚀)
-// Envia o e-mail com o Deep Link
+// ROTA 3: RECUPERAR SENHA (ATUALIZADA)
+// Envia link HTTP que redireciona para o App
 // ==========================================
 app.post('/recuperar-senha', async (req, res) => {
     const { email } = req.body;
     console.log(`📧 RECUPERAÇÃO: Solicitada para ${email}`);
 
     try {
-        // 1. Verifica se o usuário existe
         const usuario = await prisma.usuarios.findUnique({
             where: { email: email }
         });
 
         if (!usuario) {
-            // Por segurança, não dizemos que o e-mail não existe, mas logamos o erro
             return res.status(404).json({ error: "Usuário não encontrado." });
         }
 
-        // 2. O LINK MÁGICO (Deep Link)
-        // Isso fará o Android abrir direto na tela de Redefinir
-        const linkRecuperacao = `gerokernel://redefinir?email=${email}`;
+        // ⚠️ CONFIGURAÇÃO DE IP (MUITO IMPORTANTE)
+        // Abra o terminal, digite ipconfig e pegue o endereço IPv4.
+        const MEU_IP = "192.168.1.8"; // <--- TROQUE PELO SEU IP AQUI!!!
+        const PORTA = 3000;
 
-        // 3. Enviar E-mail
+        // Link seguro que o Gmail aceita (HTTP)
+        const linkSeguro = `http://${MEU_IP}:${PORTA}/abrir-app?email=${email}`;
+
         await transporter.sendMail({
             from: '"Suporte GeroKernel" <jpzurlo.jz@gmail.com>',
             to: email,
             subject: "Redefinição de Senha - GeroKernel",
             html: `
-                <div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+                <div style="font-family: Arial, sans-serif; color: #333; padding: 20px; text-align: center;">
                     <h2 style="color: #2E7D32;">Olá, ${usuario.nome}!</h2>
                     <p>Recebemos um pedido para redefinir sua senha.</p>
-                    <p>Toque no botão abaixo para criar uma nova senha no aplicativo:</p>
+                    <p>Toque no botão abaixo para criar uma nova senha:</p>
 
-                    <a href="${linkRecuperacao}" style="
+                    <a href="${linkSeguro}" style="
                         background-color: #2E7D32;
                         color: white;
                         padding: 15px 25px;
@@ -114,19 +126,20 @@ app.post('/recuperar-senha', async (req, res) => {
                         border-radius: 8px;
                         font-weight: bold;
                         display: inline-block;
-                        margin-top: 10px;">
-                        ABRIR APP E CRIAR SENHA
+                        margin-top: 10px;
+                        font-size: 16px;">
+                        CRIAR NOVA SENHA
                     </a>
 
-                    <p style="margin-top: 30px; color: #999; font-size: 12px;">
-                        Se o botão não funcionar, tente este link:<br>
-                        ${linkRecuperacao}
+                    <p style="margin-top: 20px; color: #999; font-size: 12px;">
+                        Se não funcionar, copie este link no navegador do celular:<br>
+                        ${linkSeguro}
                     </p>
                 </div>
             `
         });
 
-        console.log("✅ E-mail de recuperação enviado!");
+        console.log("✅ E-mail enviado com link HTTP de redirecionamento!");
         res.status(200).json({ message: "E-mail enviado." });
 
     } catch (error) {
@@ -136,8 +149,7 @@ app.post('/recuperar-senha', async (req, res) => {
 });
 
 // ==========================================
-// ROTA 4: REDEFINIR SENHA (SALVAR NO BANCO) (NOVA! 🚀)
-// O Android chama essa rota depois que o idoso digita a senha nova
+// ROTA 4: REDEFINIR SENHA (SALVAR NO BANCO)
 // ==========================================
 app.post('/redefinir-senha', async (req, res) => {
     const { email, novaSenha } = req.body;
@@ -158,9 +170,6 @@ app.post('/redefinir-senha', async (req, res) => {
     }
 });
 
-// ==========================================
-// INICIALIZAÇÃO
-// ==========================================
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 SERVIDOR GeroKernel RODANDO NA PORTA ${PORT}`);
