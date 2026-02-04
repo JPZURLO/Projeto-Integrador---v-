@@ -170,6 +170,63 @@ app.post('/redefinir-senha', async (req, res) => {
     }
 });
 
+// ==========================================
+// ROTA 5: SALVAR SINAIS VITAIS (POST)
+// ==========================================
+app.post('/sinais', async (req, res) => {
+  console.log("==> SINAIS: Recebendo medição...", req.body);
+
+  const { usuarioId, sistolica, diastolica, glicose } = req.body;
+
+  try {
+    // 1. Tabela corrigida: sinais_vitais
+    const novoRegistro = await prisma.sinais_vitais.create({
+      data: {
+        // 2. Coluna corrigida: usuario_id (com underline, conforme o erro pediu)
+        usuario_id: Number(usuarioId),
+        sistolica: Number(sistolica),
+        diastolica: Number(diastolica),
+        glicose: glicose ? Number(glicose) : null
+      }
+    });
+
+    console.log("✅ Sinais salvos com sucesso!");
+    res.status(201).json(novoRegistro);
+
+  } catch (error) {
+    console.error("❌ Erro ao salvar sinais:", error);
+    res.status(500).json({ error: "Erro ao salvar dados." });
+  }
+});
+
+// ==========================================
+// ROTA 6: BUSCAR HISTÓRICO (GET)
+// O Android chama para montar o gráfico
+// ==========================================
+// ROTA 6: BUSCAR HISTÓRICO (GET)
+app.get('/sinais/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+  console.log(`📈 GRÁFICO: Buscando dados do usuário ${usuarioId}`);
+
+  try {
+    // 1. Tabela corrigida: sinais_vitais
+    const historico = await prisma.sinais_vitais.findMany({
+      where: {
+          // 2. Coluna corrigida: usuario_id (também precisa mudar aqui!)
+          usuario_id: Number(usuarioId)
+      },
+      orderBy: { data_hora: 'asc' },
+      take: 20
+    });
+
+    res.status(200).json(historico);
+
+  } catch (error) {
+    console.error("❌ Erro ao buscar histórico:", error);
+    res.status(500).json({ error: "Erro ao buscar dados." });
+  }
+});
+
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 SERVIDOR GeroKernel RODANDO NA PORTA ${PORT}`);

@@ -1,9 +1,11 @@
-package com.exemplo.gerokernel.api
-
-import com.exemplo.gerokernel.models.User
+package com.example.gerokernel.api
+import com.example.gerokernel.models.SinaisModel
+import com.example.gerokernel.model.User
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface ApiService {
     @POST("cadastro")
@@ -22,5 +24,14 @@ interface ApiService {
     // Rota para SALVAR a nova senha (Tela "Redefinir Senha")
     @POST("redefinir-senha")
     fun salvarNovaSenha(@Body body: Map<String, String>): Call<Void>
+
+    // Rota 1: Salvar Medição
+    @POST("sinais")
+    fun salvarSinais(@Body sinais: SinaisModel): Call<SinaisModel>
+
+    // Rota 2: Buscar Histórico (Pega lista de sinais do usuário)
+    @GET("sinais/{usuarioId}")
+    fun listarSinais(@Path("usuarioId") usuarioId: Int): Call<List<SinaisModel>>
 }
+
 

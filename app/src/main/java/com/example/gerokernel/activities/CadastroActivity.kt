@@ -13,7 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.gerokernel.R
 import com.example.gerokernel.api.RetrofitClient
-import com.exemplo.gerokernel.models.User
+import com.example.gerokernel.model.User
 import com.google.android.material.textfield.TextInputEditText
 import retrofit2.Call
 import retrofit2.Callback
@@ -68,7 +68,7 @@ class CadastroActivity : AppCompatActivity() {
             if (nome.isNotEmpty() && email.isNotEmpty() && senha.isNotEmpty() && cpf.length == 14) {
                 Toast.makeText(this, "Salvando seus dados...", Toast.LENGTH_SHORT).show()
 
-                val novoUsuario = User(nome, email, senha, cpf, dataNasc, "IDOSO")
+                val novoUsuario = User(0, email, senha, cpf, dataNasc, "IDOSO")
 
                 // Chamada via Retrofit
                 RetrofitClient.instance.cadastrarUsuario(novoUsuario).enqueue(object : Callback<Void> {

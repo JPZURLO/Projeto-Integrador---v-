@@ -50,8 +50,11 @@
             <data
                 android:scheme="gerokernel"
                 android:host="redefinir" />
+
         </intent-filter>
         </activity>
+
+        <activity android:name=".activities.SinaisVitaisActivity" />
 
     </application>
 

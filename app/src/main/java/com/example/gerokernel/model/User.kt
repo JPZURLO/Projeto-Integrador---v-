@@ -1,6 +1,7 @@
-package com.exemplo.gerokernel.models
+package com.example.gerokernel.model
 
 data class User(
+    val id: Int,
     val nome: String,
     val email: String,
     val senha: String,

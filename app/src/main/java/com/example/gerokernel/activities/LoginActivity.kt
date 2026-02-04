@@ -1,5 +1,6 @@
 package com.example.gerokernel.activities
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -11,9 +12,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.gerokernel.R
 import com.example.gerokernel.api.RetrofitClient
-import com.exemplo.gerokernel.model.LoginRequest
-import com.exemplo.gerokernel.api.ApiService
-import com.exemplo.gerokernel.models.User
+import com.example.gerokernel.api.ApiService// Ajustei o pacote
+import com.example.gerokernel.model.User // Ajustei o pacote
 import com.google.android.material.textfield.TextInputEditText
 import retrofit2.Call
 import retrofit2.Callback
@@ -25,20 +25,21 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        // 1. Vincular os componentes do XML novo
+        // 1. Vincular os componentes
         val editEmail = findViewById<TextInputEditText>(R.id.editLoginEmail)
         val editSenha = findViewById<TextInputEditText>(R.id.editLoginSenha)
         val btnEntrar = findViewById<Button>(R.id.btnEntrar)
-        val btnIrCadastro = findViewById<Button>(R.id.btnIrCadastro) // Botão de texto no rodapé
-        val txtEsqueciSenha = findViewById<TextView>(R.id.txtEsqueciSenha) // Link de recuperar senha
+        val btnIrCadastro = findViewById<Button>(R.id.btnIrCadastro)
+        val txtEsqueciSenha = findViewById<TextView>(R.id.txtEsqueciSenha)
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
 
-        // 2. Ação: Ir para a tela de Cadastro
+        // 2. Ação: Ir para Cadastro
         btnIrCadastro.setOnClickListener {
             val intent = Intent(this, CadastroActivity::class.java)
             startActivity(intent)
         }
 
+        // 3. Ação: Esqueci a Senha
         txtEsqueciSenha.setOnClickListener {
             val intent = Intent(this, RecuperarSenhaActivity::class.java)
             startActivity(intent)
@@ -50,15 +51,16 @@ class LoginActivity : AppCompatActivity() {
             val senha = editSenha.text.toString().trim()
 
             if (email.isNotEmpty() && senha.isNotEmpty()) {
-                // UX: Mostra loading e esconde botão para evitar duplo clique
+                // UX: Loading
                 progressBar.visibility = View.VISIBLE
                 btnEntrar.isEnabled = false
                 btnEntrar.text = "Carregando..."
 
-                // Objeto de envio
+                // Objeto de envio (Verifique se LoginRequest está dentro de ApiService ou Models)
+                // Se der erro aqui, certifique-se de onde está a classe LoginRequest
                 val loginRequest = ApiService.LoginRequest(email, senha)
 
-                // Chamada à API (MySQL/Node.js)
+                // Chamada à API
                 RetrofitClient.instance.fazerLogin(loginRequest).enqueue(object : Callback<User> {
                     override fun onResponse(call: Call<User>, response: Response<User>) {
                         progressBar.visibility = View.GONE
@@ -67,12 +69,22 @@ class LoginActivity : AppCompatActivity() {
 
                         if (response.isSuccessful && response.body() != null) {
                             val usuarioLogado = response.body()!!
+
+                            val sharedPref = getSharedPreferences("SessaoUsuario", Context.MODE_PRIVATE)
+                            with (sharedPref.edit()) {
+                                putInt("ID_USUARIO", usuarioLogado.id) // Fundamental para os Sinais Vitais!
+                                putString("NOME_USUARIO", usuarioLogado.nome)
+                                apply() // Salva de verdade
+                            }
+                            // ====================================================
+
                             Toast.makeText(this@LoginActivity, "Bem-vindo, ${usuarioLogado.nome}!", Toast.LENGTH_LONG).show()
 
-                            // SUCESSO: Vai para a tela Principal (Home)
-                            // val intent = Intent(this@LoginActivity, HomeActivity::class.java)
-                            // startActivity(intent)
-                            // finish()
+                            // Navegação
+                            val intent = Intent(this@LoginActivity, MainActivity::class.java)
+                            intent.putExtra("NOME_USUARIO", usuarioLogado.nome)
+                            startActivity(intent)
+                            finish()
 
                         } else {
                             Toast.makeText(this@LoginActivity, "E-mail ou senha inválidos.", Toast.LENGTH_LONG).show()
@@ -83,9 +95,8 @@ class LoginActivity : AppCompatActivity() {
                         progressBar.visibility = View.GONE
                         btnEntrar.isEnabled = true
                         btnEntrar.text = "ENTRAR"
-
                         Log.e("API_LOGIN", "Erro: ${t.message}")
-                        Toast.makeText(this@LoginActivity, "Erro de conexão. Verifique a internet.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@LoginActivity, "Erro de conexão: ${t.message}", Toast.LENGTH_LONG).show()
                     }
                 })
             } else {
