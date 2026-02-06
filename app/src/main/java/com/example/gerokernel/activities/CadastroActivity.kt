@@ -18,6 +18,8 @@ import com.google.android.material.textfield.TextInputEditText
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import com.example.gerokernel.utils.CpfUtils
+
 
 class CadastroActivity : AppCompatActivity() {
 
@@ -46,7 +48,19 @@ class CadastroActivity : AppCompatActivity() {
         aplicaMascara(editCpf, "###.###.###-##")
         aplicaMascara(editDataNasc, "##/##/####")
 
-        // 4. Lógica de Mostrar Senha (Reduz erro do idoso)
+        //4. Verifica se o CPF É VALIDO
+        editCpf.setOnFocusChangeListener { _, hasFocus ->
+
+
+           //5. Se for invalido coloca um aviso visual no campo
+            if (!hasFocus) {
+                val ok = CpfUtils.isValidCPF(editCpf.text.toString())
+                editCpf.error = if (ok){ null
+                } else "CPF inválido"
+            }
+        }
+
+        // 6. Lógica de Mostrar Senha (Reduz erro do idoso)
         checkMostrarSenha.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 editSenha.transformationMethod = null
@@ -90,8 +104,17 @@ class CadastroActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Por favor, preencha todos os campos corretamente.", Toast.LENGTH_SHORT).show()
             }
+
+
+
         }
     }
+
+
+
+
+
+
 
     // Função de Máscara Genérica
     private fun aplicaMascara(editText: EditText, mask: String) {
@@ -133,4 +156,6 @@ class CadastroActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
     }
+
+
 }
