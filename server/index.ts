@@ -170,20 +170,18 @@ app.post('/redefinir-senha', async (req, res) => {
     }
 });
 
-// ==========================================
 // ROTA 5: SALVAR SINAIS VITAIS (POST)
-// ==========================================
 app.post('/sinais', async (req, res) => {
   console.log("==> SINAIS: Recebendo medição...", req.body);
 
-  const { usuarioId, sistolica, diastolica, glicose } = req.body;
+  // CORREÇÃO: Ler 'usuario_id' (com underline) que vem do Android
+  const { usuario_id, sistolica, diastolica, glicose } = req.body;
 
   try {
-    // 1. Tabela corrigida: sinais_vitais
     const novoRegistro = await prisma.sinais_vitais.create({
       data: {
-        // 2. Coluna corrigida: usuario_id (com underline, conforme o erro pediu)
-        usuario_id: Number(usuarioId),
+        // CORREÇÃO: Usar a variável usuario_id que lemos acima
+        usuario_id: Number(usuario_id),
         sistolica: Number(sistolica),
         diastolica: Number(diastolica),
         glicose: glicose ? Number(glicose) : null
