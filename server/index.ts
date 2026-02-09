@@ -191,6 +191,8 @@ app.post('/sinais', async (req, res) => {
     console.log("✅ Sinais salvos com sucesso!");
     res.status(201).json(novoRegistro);
 
+
+
   } catch (error) {
     console.error("❌ Erro ao salvar sinais:", error);
     res.status(500).json({ error: "Erro ao salvar dados." });
@@ -219,9 +221,57 @@ app.get('/sinais/:usuarioId', async (req, res) => {
 
     res.status(200).json(historico);
 
+
   } catch (error) {
     console.error("❌ Erro ao buscar histórico:", error);
     res.status(500).json({ error: "Erro ao buscar dados." });
+  }
+});
+
+// === ROTAS DE AGENDA ===
+
+// 1. Criar Consulta
+app.post('/consultas', async (req, res) => {
+  const { usuario_id, medico, especialidade, data_hora, local } = req.body;
+  try {
+    const nova = await prisma.consultas.create({
+      data: {
+        usuario_id: Number(usuario_id),
+        medico,
+        especialidade,
+        data_hora: new Date(data_hora), // Converte string pro formato de data do banco
+        local
+      }
+    });
+    res.json(nova);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao criar consulta" });
+  }
+});
+
+// 2. Listar Consultas (Ordenadas pela data mais próxima)
+app.get('/consultas/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+  try {
+    const lista = await prisma.consultas.findMany({
+      where: { usuario_id: Number(usuarioId) },
+      orderBy: { data_hora: 'asc' } // Da mais antiga para a mais nova
+    });
+    res.json(lista);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar consultas" });
+  }
+});
+
+// 3. Deletar Consulta (Caso cancelem)
+app.delete('/consultas/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.consultas.delete({ where: { id: Number(id) } });
+    res.json({ message: "Deletado com sucesso" });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao deletar" });
   }
 });
 

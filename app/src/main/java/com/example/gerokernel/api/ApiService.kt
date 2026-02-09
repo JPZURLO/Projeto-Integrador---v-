@@ -1,8 +1,10 @@
 package com.example.gerokernel.api
 import com.example.gerokernel.models.SinaisModel
 import com.example.gerokernel.model.User
+import com.example.gerokernel.models.ConsultaModel
 import retrofit2.Call
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -32,6 +34,17 @@ interface ApiService {
     // Rota 2: Buscar Histórico (Pega lista de sinais do usuário)
     @GET("sinais/{usuarioId}")
     fun listarSinais(@Path("usuarioId") usuarioId: Int): Call<List<SinaisModel>>
+
+    // === AGENDA ===
+    @POST("consultas")
+    fun salvarConsulta(@Body consulta: ConsultaModel): Call<ConsultaModel>
+
+    @GET("consultas/{id}")
+    fun listarConsultas(@Path("id") usuarioId: Int): Call<List<ConsultaModel>>
+
+    @DELETE("consultas/{id}")
+    fun deletarConsulta(@Path("id") idConsulta: Int): Call<Void>
+
 }
 
 

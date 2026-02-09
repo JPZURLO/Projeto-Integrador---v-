@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// === TABELAS EXISTENTES ===
+
 model glicose {
   id           Int              @id @default(autoincrement())
   usuario_id   Int?
@@ -55,30 +57,46 @@ model sinais_vitais {
   diastolica  Int
   glicose     Int?
   data_hora   DateTime @default(now())
-
   usuario_id  Int
-
-  // CORREÇÃO AQUI:
-  // 1. O tipo mudou de 'Usuarios' para 'usuarios' (nome real da tabela)
-  // 2. Mudei o nome do campo para 'usuarios' para ficar igual às outras tabelas
   usuarios    usuarios @relation(fields: [usuario_id], references: [id])
 }
+
+// === MODELO PRINCIPAL (USUARIOS) ===
 model usuarios {
   id                Int                    @id @default(autoincrement())
   nome              String                 @db.VarChar(100)
   email             String                 @unique(map: "email")
   senha             String                 @db.VarChar(255)
-  cpf             String   @unique // Adicionado
-  data_nascimento String?           // Adicionado (opcional como String para facilitar a máscara)
+  cpf               String                 @unique
+  data_nascimento   String?
   tipo_usuario      usuarios_tipo_usuario? @default(idoso)
   criado_em         DateTime?              @default(now()) @db.Timestamp(0)
+
+  // RELACIONAMENTOS (Onde as outras tabelas se conectam)
   glicose           glicose[]
   hidratacao        hidratacao[]
   medicamentos      medicamentos[]
   recuperacao_senha recuperacao_senha[]
   sinais_vitais     sinais_vitais[]
+
+  // AQUI ESTAVA FALTANDO ESSA LINHA:
+  consultas         consultas[]
 }
 
+// === NOVA TABELA DE AGENDA ===
+model consultas {
+  id            Int      @id @default(autoincrement())
+  usuario_id    Int
+  medico        String   @db.VarChar(100)
+  especialidade String   @db.VarChar(100)
+  data_hora     DateTime @db.DateTime(0)
+  local         String?  @db.VarChar(200)
+
+  // Relacionamento com o usuário
+  usuarios      usuarios @relation(fields: [usuario_id], references: [id])
+}
+
+// === ENUMS ===
 enum glicose_periodo {
   jejum
   pos_prandial

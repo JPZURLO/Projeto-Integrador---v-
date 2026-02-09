@@ -13,38 +13,38 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Personalizar Saudação
-        // Pegamos o nome que veio do LoginActivity
+        // 1. Saudação
         val txtOla = findViewById<TextView>(R.id.txtOla)
-        val nomeUsuario = intent.getStringExtra("NOME_USUARIO") ?: "Usuário"
+        val nomeUsuario = intent.getStringExtra("NOME_USUARIO") ?: "João"
         txtOla.text = "Olá, $nomeUsuario"
 
         // 2. Mapear os Cards
         val cardSinais = findViewById<MaterialCardView>(R.id.cardSinais)
-        val cardAgenda = findViewById<MaterialCardView>(R.id.cardAgenda)
+        val cardAgenda = findViewById<MaterialCardView>(R.id.cardAgenda) // Já existe no seu XML
         val cardAgua = findViewById<MaterialCardView>(R.id.cardAgua)
         val cardEmergencia = findViewById<MaterialCardView>(R.id.cardEmergencia)
 
         // 3. Configurar Cliques
 
-        // === AQUI ESTAVA FALTANDO! ===
+        // SINAIS VITAIS
         cardSinais.setOnClickListener {
-            // Agora sim: Navega para a tela de Sinais Vitais
             val intent = Intent(this, SinaisVitaisActivity::class.java)
             startActivity(intent)
         }
-        // ==============================
 
+        // === AGENDA (AGORA FUNCIONA!) ===
         cardAgenda.setOnClickListener {
-            Toast.makeText(this, "Agenda de Consultas em breve!", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, AgendaActivity::class.java)
+            startActivity(intent)
         }
 
+        // Outros (Futuros)
         cardAgua.setOnClickListener {
             Toast.makeText(this, "Bot de Hidratação em breve!", Toast.LENGTH_SHORT).show()
         }
 
         cardEmergencia.setOnClickListener {
-            Toast.makeText(this, "Ficha Médica de Emergência em breve!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Ficha Médica em breve!", Toast.LENGTH_SHORT).show()
         }
     }
 }
