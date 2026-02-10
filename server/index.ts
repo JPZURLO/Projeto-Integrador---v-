@@ -275,6 +275,54 @@ app.delete('/consultas/:id', async (req, res) => {
   }
 });
 
+// ==========================================
+// ROTA 7: HIDRATAÇÃO (Salvar Copo d'água) 💧
+// ==========================================
+app.post('/hidratacao', async (req, res) => {
+  const { usuario_id, quantidade_ml } = req.body;
+  console.log(`💧 HIDRATAÇÃO: Usuário ${usuario_id} bebeu ${quantidade_ml}ml`);
+
+  try {
+    const registro = await prisma.hidratacao.create({
+      data: {
+        usuario_id: Number(usuario_id),
+        quantidade_ml: Number(quantidade_ml),
+        data_hora: new Date() // Pega a hora exata do servidor
+      }
+    });
+    res.status(201).json(registro);
+  } catch (error) {
+    console.error("❌ Erro ao salvar hidratação:", error);
+    res.status(500).json({ error: "Erro ao registrar hidratação." });
+  }
+});
+
+// ==========================================
+// ROTA 8: HIDRATAÇÃO (Pegar Histórico) 📊
+// Agrupa por dia para mostrar na tabelinha
+// ==========================================
+app.get('/hidratacao/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+
+  try {
+    // Busca todos os registros do usuário
+    const registros = await prisma.hidratacao.findMany({
+      where: { usuario_id: Number(usuarioId) },
+      orderBy: { data_hora: 'desc' }
+    });
+
+    // TRUQUE: O Android espera uma lista de (Data, Total).
+    // Vamos somar os copos de cada dia aqui no Backend ou mandar cru pro Android.
+    // Vamos mandar cru e o Android soma, é mais fácil pra agora.
+
+    res.status(200).json(registros);
+
+  } catch (error) {
+    console.error("❌ Erro ao buscar hidratação:", error);
+    res.status(500).json({ error: "Erro ao buscar histórico." });
+  }
+});
+
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 SERVIDOR GeroKernel RODANDO NA PORTA ${PORT}`);

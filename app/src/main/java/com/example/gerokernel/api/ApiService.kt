@@ -2,6 +2,8 @@ package com.example.gerokernel.api
 import com.example.gerokernel.models.SinaisModel
 import com.example.gerokernel.model.User
 import com.example.gerokernel.models.ConsultaModel
+import com.example.gerokernel.models.HidratacaoRequest
+import com.example.gerokernel.models.HidratacaoResponse
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -44,6 +46,14 @@ interface ApiService {
 
     @DELETE("consultas/{id}")
     fun deletarConsulta(@Path("id") idConsulta: Int): Call<Void>
+
+    // Salvar Água
+    @POST("hidratacao")
+    fun salvarHidratacao(@Body corpo: HidratacaoRequest): Call<Void>
+
+    // Pegar Histórico
+    @GET("hidratacao/{id}")
+    fun getHistoricoHidratacao(@Path("id") id: Int): Call<List<HidratacaoResponse>>
 
 }
 

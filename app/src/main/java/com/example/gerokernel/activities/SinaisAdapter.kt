@@ -51,24 +51,18 @@ class SinaisAdapter(
 
         // 2. FORMATAÇÃO POPULAR (O TRUQUE DO 12 POR 8)
         fun formatarInteligente(valor: Int): String {
-            // Se for menor que 50, assumimos que o usuário JÁ digitou "12" ou "16".
-            // Então não dividimos de novo para não virar 1.2 ou 1.6
-            if (valor < 50) {
-                return valor.toString()
-            }
+            // Se for menor que 50 (tipo 12 ou 16), o idoso já digitou simplificado. Não divide!
+            if (valor < 50) return valor.toString()
 
-            // Se for alto (ex: 120, 160), aplicamos a divisão
-            return if (valor % 10 == 0) {
-                (valor / 10).toString()
-            } else {
-                (valor / 10.0).toString()
-            }
+            // Se for maior (tipo 120 ou 160), aí sim divide por 10.
+            return if (valor % 10 == 0) (valor / 10).toString() else (valor / 10.0).toString()
         }
 
         val sysPop = formatarInteligente(item.sistolica)
         val diaPop = formatarInteligente(item.diastolica)
 
         holder.txtPressao.text = "$sysPop/$diaPop"
+
 
         // 3. GLICOSE (Mantém o número original)
         if (item.glicose != null && item.glicose > 0) {

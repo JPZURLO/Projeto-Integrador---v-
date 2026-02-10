@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#E1F5FE">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="24dp">
+
+        <View
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:background="#0288D1"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hidratação"
+            android:textColor="#FFF"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/header"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/header" />
+
+        <ImageButton
+            android:id="@+id/btnVoltar"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_launcher_foreground"
+            app:tint="#FFF"
+            android:layout_marginStart="16dp"
+            app:layout_constraintBottom_toBottomOf="@id/header"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/header" />
+
+        <ProgressBar
+            android:id="@+id/progressAgua"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:max="2000"
+            android:progress="0"
+            android:progressDrawable="@drawable/circular_progress"
+            android:layout_marginTop="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/header" />
+
+        <TextView
+            android:id="@+id/txtQuantidade"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 ml"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#0277BD"
+            app:layout_constraintBottom_toBottomOf="@id/progressAgua"
+            app:layout_constraintEnd_toEndOf="@id/progressAgua"
+            app:layout_constraintStart_toStartOf="@id/progressAgua"
+            app:layout_constraintTop_toTopOf="@id/progressAgua" />
+
+        <TextView
+            android:id="@+id/txtMeta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Meta: 2000 ml"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/progressAgua"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
+
+        <LinearLayout
+            android:id="@+id/layoutBotoes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@id/txtMeta">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCopo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+ 200ml"
+                android:layout_marginEnd="16dp"
+                app:icon="@drawable/ic_water_drop"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGarrafa"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+ 500ml"
+                app:icon="@drawable/ic_water_drop"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtTituloHistorico"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Histórico Recente"
+            android:textStyle="bold"
+            android:textColor="#0277BD"
+            android:textSize="18sp"
+            android:layout_marginTop="32dp"
+            android:layout_marginStart="24dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutBotoes"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerHistorico"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="12dp"
+            android:nestedScrollingEnabled="false"
+            app:layout_constraintTop_toBottomOf="@id/txtTituloHistorico"/>
+
+        <Button
+            android:id="@+id/btnZerar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reiniciar Dia"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:textColor="#D32F2F"
+            android:layout_marginTop="24dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/recyclerHistorico"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

@@ -4,6 +4,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
@@ -30,17 +33,10 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".activities.LoginActivity"
-            android:exported="false" />
+        <activity android:name=".activities.LoginActivity" android:exported="false" />
+        <activity android:name=".activities.CadastroActivity" android:exported="false" />
 
-        <activity
-            android:name=".activities.CadastroActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".activities.MainActivity"
-            android:exported="false" />
+        <activity android:name=".activities.MainActivity" android:exported="false" />
 
         <activity android:name=".activities.RecuperarSenhaActivity" />
 
@@ -51,19 +47,16 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="gerokernel"
-                    android:host="redefinir" />
+                <data android:scheme="gerokernel" android:host="redefinir" />
             </intent-filter>
         </activity>
 
         <activity android:name=".activities.SinaisVitaisActivity" />
-
         <activity android:name=".activities.AgendaActivity" />
+        <activity android:name=".activities.HidratacaoActivity" />
 
-        <receiver
-            android:name=".utils.LembreteReceiver"
-            android:exported="false" />
+        <receiver android:name=".utils.LembreteReceiver" android:exported="true" />
+        <receiver android:name=".utils.HidratacaoReceiver" android:exported="false"/>
 
     </application>
 

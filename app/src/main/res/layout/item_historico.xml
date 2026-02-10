@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/bg_borda_fina"> <ImageView
+    android:layout_width="24dp"
+    android:layout_height="24dp"
+    android:src="@drawable/ic_calendar" />
+
+    <TextView
+        android:id="@+id/txtDataHistorico"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="10/02/2026"
+        android:textSize="16sp"
+        android:textColor="#333"
+        android:layout_marginStart="12dp"/>
+
+    <TextView
+        android:id="@+id/txtMlHistorico"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2000 ml"
+        android:textStyle="bold"
+        android:textColor="#0288D1"
+        android:textSize="16sp"/>
+</LinearLayout>
