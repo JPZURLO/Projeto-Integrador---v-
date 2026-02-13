@@ -33,12 +33,16 @@ model hidratacao {
 model medicamentos {
   id               Int       @id @default(autoincrement())
   usuario_id       Int?
-  nome_remedio     String?   @db.VarChar(100)
-  dosagem          String?   @db.VarChar(50)
-  horario_agendado DateTime? @db.Time(0)
-  usuarios         usuarios? @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "medicamentos_ibfk_1")
+  nome_remedio     String?
+  dosagem          String?
+  frequencia_horas Int?
+  quantidade_total Int?
+  horario_agendado DateTime?
 
-  @@index([usuario_id], map: "usuario_id")
+  // ADICIONE ESTAS DUAS LINHAS PARA CONECTAR COM A TABELA USUARIOS
+  usuarios         usuarios? @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([usuario_id], map: "medicamentos_usuario_id_idx")
 }
 
 model recuperacao_senha {
@@ -81,6 +85,7 @@ model usuarios {
 
   // AQUI ESTAVA FALTANDO ESSA LINHA:
   consultas         consultas[]
+  ficha_medica      ficha_medica?
 }
 
 // === NOVA TABELA DE AGENDA ===
@@ -106,4 +111,15 @@ enum glicose_periodo {
 enum usuarios_tipo_usuario {
   idoso
   cuidador
+}
+
+model ficha_medica {
+  id               Int      @id @default(autoincrement())
+  usuario_id       Int      @unique // Um usuário só tem UMA ficha
+  tipo_sanguineo   String?  @db.VarChar(10)  // Ex: O+
+  alergias         String?  @db.VarChar(255) // Ex: Dipirona, Camarão
+  doencas_cronicas String?  @db.VarChar(255) // Ex: Hipertensão
+  contato_nome     String?  @db.VarChar(100) // Ex: Filho João
+  contato_telefone String?  @db.VarChar(20)  // Ex: 11999999999
+  usuarios         usuarios @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 }

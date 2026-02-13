@@ -275,6 +275,8 @@ app.delete('/consultas/:id', async (req, res) => {
   }
 });
 
+// ... (seu código anterior continua igual) ...
+
 // ==========================================
 // ROTA 7: HIDRATAÇÃO (Salvar Copo d'água) 💧
 // ==========================================
@@ -287,7 +289,7 @@ app.post('/hidratacao', async (req, res) => {
       data: {
         usuario_id: Number(usuario_id),
         quantidade_ml: Number(quantidade_ml),
-        data_hora: new Date() // Pega a hora exata do servidor
+        data_hora: new Date()
       }
     });
     res.status(201).json(registro);
@@ -299,30 +301,234 @@ app.post('/hidratacao', async (req, res) => {
 
 // ==========================================
 // ROTA 8: HIDRATAÇÃO (Pegar Histórico) 📊
-// Agrupa por dia para mostrar na tabelinha
 // ==========================================
 app.get('/hidratacao/:usuarioId', async (req, res) => {
   const { usuarioId } = req.params;
-
   try {
-    // Busca todos os registros do usuário
     const registros = await prisma.hidratacao.findMany({
       where: { usuario_id: Number(usuarioId) },
       orderBy: { data_hora: 'desc' }
     });
-
-    // TRUQUE: O Android espera uma lista de (Data, Total).
-    // Vamos somar os copos de cada dia aqui no Backend ou mandar cru pro Android.
-    // Vamos mandar cru e o Android soma, é mais fácil pra agora.
-
     res.status(200).json(registros);
-
   } catch (error) {
     console.error("❌ Erro ao buscar hidratação:", error);
     res.status(500).json({ error: "Erro ao buscar histórico." });
   }
 });
 
+// ==========================================
+// ROTA 9: FICHA MÉDICA COMPLETA 🏥
+// Busca dados de emergência + remédios
+// ==========================================
+app.get('/ficha/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+
+  try {
+    // 1. Busca a ficha básica
+    const ficha = await prisma.ficha_medica.findUnique({
+      where: { usuario_id: Number(usuarioId) }
+    });
+
+    // 2. Busca os remédios
+    const remedios = await prisma.medicamentos.findMany({
+      where: { usuario_id: Number(usuarioId) }
+    });
+
+    // 3. Manda tudo junto
+    res.json({
+      ...ficha, // Espalha os dados da ficha (tipo, alergias...)
+      lista_medicamentos: remedios // Adiciona a lista de remédios
+    });
+
+  } catch (error) {
+    console.error("Erro na ficha:", error);
+    res.status(500).json({ error: "Erro ao buscar ficha" });
+  }
+});
+
+// Rota para SALVAR/ATUALIZAR a ficha (Postman)
+app.post('/ficha', async (req, res) => {
+    const { usuario_id, tipo_sanguineo, alergias, contato_telefone, contato_nome } = req.body;
+    try {
+        const ficha = await prisma.ficha_medica.upsert({
+            where: { usuario_id: Number(usuario_id) },
+            update: { tipo_sanguineo, alergias, contato_telefone, contato_nome },
+            create: { usuario_id: Number(usuario_id), tipo_sanguineo, alergias, contato_telefone, contato_nome }
+        });
+        res.json(ficha);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Erro ao salvar ficha" });
+    }
+});
+
+// ==========================================
+// ROTA 10: ATUALIZAR PERFIL COMPLETO ⚙️
+// Atualiza dados do usuário E da ficha médica
+// ==========================================
+app.put('/perfil/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+  const { nome, email, telefone, tipo_sanguineo, alergias } = req.body;
+
+  try {
+    // 1. Atualiza dados básicos (Tabela Usuarios)
+    const usuarioAtualizado = await prisma.usuarios.update({
+      where: { id: Number(usuarioId) },
+      data: { nome, email }
+    });
+
+    // 2. Atualiza ou Cria a Ficha Médica (Tabela Ficha)
+    // Usamos 'upsert': se existe, atualiza; se não, cria.
+    const fichaAtualizada = await prisma.ficha_medica.upsert({
+      where: { usuario_id: Number(usuarioId) },
+      update: {
+        contato_telefone: telefone,
+        tipo_sanguineo: tipo_sanguineo,
+        alergias: alergias
+      },
+      create: {
+        usuario_id: Number(usuarioId),
+        contato_telefone: telefone,
+        tipo_sanguineo: tipo_sanguineo,
+        alergias: alergias
+      }
+    });
+
+    res.json({ usuario: usuarioAtualizado, ficha: fichaAtualizada });
+
+  } catch (error) {
+    console.error("Erro ao atualizar perfil:", error);
+    res.status(500).json({ error: "Erro ao atualizar dados." });
+  }
+});
+
+app.post('/medicamentos', async (req, res) => {
+  const { usuario_id, nome_remedio, dosagem, frequencia_horas, quantidade_total, horario_inicio } = req.body;
+
+  try {
+    // 1. Prepara a data base (Hoje na hora escolhida)
+    const [horas, minutos] = horario_inicio.split(':');
+    let dataReferencia = new Date();
+    dataReferencia.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+
+    const frequenciaMs = Number(frequencia_horas) * 60 * 60 * 1000;
+    const cronograma = [];
+
+    // 2. Loop que gera as doses e diminui o estoque virtualmente
+    for (let i = 0; i < Number(quantidade_total); i++) {
+      // Cálculo da quantidade que restará APÓS tomar essa dose
+      const estoqueRestante = Number(quantidade_total) - i;
+
+      cronograma.push({
+        usuario_id: Number(usuario_id),
+        nome_remedio: nome_remedio,
+        dosagem: dosagem,
+        frequencia_horas: Number(frequencia_horas),
+        quantidade_total: estoqueRestante, // Salva o estoque decrescente
+        horario_agendado: new Date(dataReferencia.getTime() + (i * frequenciaMs))
+      });
+    }
+
+    // 3. Salva o cronograma completo no MySQL
+    const resultado = await prisma.medicamentos.createMany({
+      data: cronograma
+    });
+
+    console.log(`✅ Cronograma gerado: ${resultado.count} doses.`);
+    res.status(201).json(resultado);
+
+  } catch (error) {
+    console.error("❌ Erro:", error);
+    res.status(500).json({ error: "Erro ao gerar cronograma." });
+  }
+});
+
+app.get('/medicamentos/:usuarioId', async (req, res) => {
+  const { usuarioId } = req.params;
+  console.log(`🔍 BUSCA: Remédios do usuário ${usuarioId}`);
+  try {
+    const lista = await prisma.medicamentos.findMany({
+      where: { usuario_id: Number(usuarioId) }
+    });
+    res.json(lista);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar" });
+  }
+});
+
+// ==========================================
+// ROTA 12: REGISTRAR TOMADA DE REMÉDIO (COM AVISO DE ESTOQUE BAIXO)
+// ==========================================
+app.post('/medicamentos/tomar/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const med = await prisma.medicamentos.findUnique({
+        where: { id: Number(id) },
+        include: { usuarios: true } // Incluímos o usuário para saber o nome/email dele no aviso
+    });
+
+    if (med && med.quantidade_total !== null && med.quantidade_total > 0) {
+      const novaQuantidade = med.quantidade_total - 1;
+
+      const atualizado = await prisma.medicamentos.update({
+        where: { id: Number(id) },
+        data: { quantidade_total: novaQuantidade }
+      });
+
+      // 🚨 LÓGICA DE EVENTO: ESTOQUE BAIXO (Avisa quando chegar em 10 ou menos)
+      // Dentro da Rota 12, após atualizar a quantidade no Prisma
+      if (novaQuantidade <= 10) {
+          // 📧 CANAL 1: E-MAIL (Redundância/Histórico)
+          if (med.usuarios && med.usuarios.email) {
+              await transporter.sendMail({
+                  from: '"GeroKernel" <jpzurlo.jz@gmail.com>',
+                  to: med.usuarios.email,
+                  subject: `⚠️ Estoque Baixo: ${med.nome_remedio}`,
+                  text: `Atenção! Constam apenas ${novaQuantidade} unidades de ${med.nome_remedio}.`
+              });
+          }
+
+          // 📱 CANAL 2: RESPOSTA DO APP (Alerta Imediato)
+          return res.status(200).json({
+              ...atualizado,
+              alerta_estoque: true,
+              mensagem: `Atenção: Apenas ${novaQuantidade} unidades restantes!`
+          });
+      }
+
+      res.status(200).json({
+          ...atualizado,
+          alerta: novaQuantidade <= 10 ? "Estoque baixo!" : null
+      });
+
+    } else {
+      res.status(400).json({ error: "Estoque insuficiente ou nulo." });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao dar baixa no remédio" });
+  }
+});
+
+// No seu arquivo index.ts
+app.delete('/medicamentos/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.medicamentos.delete({
+      where: { id: Number(id) }
+    });
+    console.log(`🗑️ Medicamento ID ${id} excluído.`);
+    res.json({ message: "Excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao deletar:", error);
+    res.status(500).json({ error: "Erro ao excluir o registro." });
+  }
+});
+
+// ==========================================
+// INICIALIZAÇÃO DO SERVIDOR 🚀
+// ==========================================
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 SERVIDOR GeroKernel RODANDO NA PORTA ${PORT}`);
