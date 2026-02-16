@@ -1,9 +1,11 @@
 package com.example.gerokernel.activities
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,49 +20,59 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+// IMPORTANTE: Se o erro persistir, adicione este import manualmente
+import com.example.gerokernel.activities.AgendaActivity
+
 class MainActivity : AppCompatActivity() {
 
-    // Sua chave da API (Cole a sua aqui!)
     private val API_KEY = "1847f643fb8e8e81297ab519e2c1132a"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // ... (Seu código de saudação e cards existentes) ...
-        val txtOla = findViewById<TextView>(R.id.txtOla)
-        val nomeUsuario = intent.getStringExtra("NOME_USUARIO") ?: "Usuário"
-        txtOla.text = "Olá, $nomeUsuario"
-
-        // Setup dos Cards Antigos
         setupCards()
-
-        // === NOVO: BUSCAR CLIMA ===
         buscarLocalizacaoEClima()
     }
 
+    override fun onResume() {
+        super.onResume()
+        atualizarSaudacao()
+    }
+
+    private fun atualizarSaudacao() {
+        val txtOla = findViewById<TextView>(R.id.txtOla)
+        val prefs = getSharedPreferences("SessaoUsuario", Context.MODE_PRIVATE)
+        val nomeSalvo = prefs.getString("NOME_USUARIO", null)
+        val nomeIntent = intent.getStringExtra("NOME_USUARIO")
+
+        val nomeFinal = nomeSalvo ?: nomeIntent ?: "Usuário"
+        txtOla.text = "Olá, $nomeFinal"
+    }
+
     private fun setupCards() {
-        // 1. Sinais Vitais (Confira se o ID no XML é @+id/cardSinais)
+        val imgPerfil = findViewById<ImageView>(R.id.imgPerfil)
+        imgPerfil?.setOnClickListener {
+            val intent = Intent(this@MainActivity, PerfilActivity::class.java)
+            startActivity(intent)
+        }
+
         findViewById<MaterialCardView>(R.id.cardSinais).setOnClickListener {
-            val intent = Intent(this, SinaisVitaisActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this@MainActivity, SinaisVitaisActivity::class.java))
         }
 
-        // 2. Agenda (Confira se o ID no XML é @+id/cardAgenda)
+        // CORREÇÃO: Uso explícito da classe para evitar erro de inferência
         findViewById<MaterialCardView>(R.id.cardAgenda).setOnClickListener {
-            val intent = Intent(this, AgendaActivity::class.java)
+            val intent = Intent(this@MainActivity, AgendaActivity::class.java)
             startActivity(intent)
         }
 
-        // 3. Hidratação (Confira se o ID no XML é @+id/cardAgua)
         findViewById<MaterialCardView>(R.id.cardAgua).setOnClickListener {
-            val intent = Intent(this, HidratacaoActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this@MainActivity, HidratacaoActivity::class.java))
         }
 
-        // 4. Emergência (Esse a gente ainda vai criar, então só mostra mensagem)
         findViewById<MaterialCardView>(R.id.cardEmergencia).setOnClickListener {
-            Toast.makeText(this, "Tela de Emergência em breve!", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this@MainActivity, EmergenciaActivity::class.java))
         }
     }
 
@@ -68,7 +80,6 @@ class MainActivity : AppCompatActivity() {
     private fun buscarLocalizacaoEClima() {
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-        // Verifica Permissão
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
             return
@@ -98,14 +109,10 @@ class MainActivity : AppCompatActivity() {
 
                     txtTemp.text = "$temperatura°C em $cidade"
                     txtUmid.text = "Umidade: $umidade%"
-
-                    // Lógica Extra: Avisos de Saúde!
-                    if (umidade < 30) txtUmid.text = "Umidade: $umidade% (AR SECO: Beba água!)"
-                    if (temperatura > 32) txtTemp.text = "$temperatura°C (CALOR: Cuidado com a pressão)"
                 }
             }
             override fun onFailure(call: Call<WeatherResponse>, t: Throwable) {
-                txtTemp.text = "Erro na rede"
+                txtTemp.text = "Erro rede"
             }
         })
     }

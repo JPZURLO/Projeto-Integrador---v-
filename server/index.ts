@@ -233,20 +233,45 @@ app.get('/sinais/:usuarioId', async (req, res) => {
 // 1. Criar Consulta
 app.post('/consultas', async (req, res) => {
   const { usuario_id, medico, especialidade, data_hora, local } = req.body;
+  console.log("📅 Recebendo consulta:", data_hora); // Debug para ver o que chega
+
   try {
+    // 1. Quebramos a string "16/02/2026 19:55"
+    const [dataParte, horaParte] = data_hora.split(' ');
+    const [dia, mes, ano] = dataParte.split('/');
+    const [horas, minutos] = horaParte.split(':');
+
+    // 2. Criamos o objeto Date no formato que o Prisma aceita (Ano, Mês-1, Dia, Hora, Min)
+    // O mês no JS começa em 0 (Janeiro = 0), por isso subtraímos 1
+    const dataFormatada = new Date(
+        parseInt(ano),
+        parseInt(mes) - 1,
+        parseInt(dia),
+        parseInt(horas),
+        parseInt(minutos)
+    );
+
+    // 3. Verificação de segurança DevOps
+    if (isNaN(dataFormatada.getTime())) {
+        throw new Error("Formato de data inválido!");
+    }
+
     const nova = await prisma.consultas.create({
       data: {
         usuario_id: Number(usuario_id),
         medico,
         especialidade,
-        data_hora: new Date(data_hora), // Converte string pro formato de data do banco
-        local
+        data_hora: dataFormatada, // Agora o Prisma recebe um objeto Date válido
+        local: local || "Não informado"
       }
     });
+
+    console.log("✅ Consulta salva no MySQL!");
     res.json(nova);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao criar consulta" });
+
+  } catch (error: any) { // Mudando para 'any' ou tratando o tipo
+      console.error("❌ Erro no Prisma:", error.message);
+      res.status(500).json({ error: "Erro ao formatar data ou salvar no banco." });
   }
 });
 

@@ -9,6 +9,8 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.gerokernel.R
+
+// IMPORTANTE: Garantir que a classe da Agenda seja reconhecida
 import com.example.gerokernel.activities.AgendaActivity
 
 class LembreteReceiver : BroadcastReceiver() {
@@ -20,11 +22,9 @@ class LembreteReceiver : BroadcastReceiver() {
         val id = intent.getIntExtra("ID_CONSULTA", 0)
 
         val channelId = "canal_agenda_gerokernel"
-
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // 🔔 Canal (Android 8+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -37,16 +37,18 @@ class LembreteReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        // CORREÇÃO: Referência explícita para evitar o erro 'Unresolved reference'
         val intentApp = Intent(context, AgendaActivity::class.java)
+
         val pendingIntent = PendingIntent.getActivity(
             context,
-            id, // ⚠️ usa ID único
+            id,
             intentApp,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher) // ✔ ícone válido
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("⏰ Hora da Consulta")
             .setContentText("Consulta com $medico ($especialidade)")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

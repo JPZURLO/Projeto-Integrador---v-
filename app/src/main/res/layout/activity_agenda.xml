@@ -6,24 +6,21 @@
     android:layout_height="match_parent"
     android:background="#FAFAFA">
 
-    <!-- HEADER -->
     <View
         android:id="@+id/header"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="100dp"
         android:background="#2E7D32"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <ImageButton
         android:id="@+id/btnVoltar"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginStart="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_launcher_foreground"
         app:tint="#FFFFFF"
+        android:layout_marginStart="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/header"
         app:layout_constraintBottom_toBottomOf="@id/header"/>
@@ -41,158 +38,239 @@
         app:layout_constraintTop_toTopOf="@id/header"
         app:layout_constraintBottom_toBottomOf="@id/header"/>
 
-    <!-- CARD FORM -->
+    <LinearLayout
+        android:id="@+id/layoutAbas"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="-24dp"
+        app:layout_constraintTop_toBottomOf="@id/header">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAbaConsulta"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="🩺 CONSULTA"
+            app:cornerRadius="20dp"
+            android:layout_marginEnd="4dp"
+            app:backgroundTint="#FFFFFF"
+            android:textColor="#2E7D32"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAbaRemedio"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="💊 REMÉDIO"
+            app:cornerRadius="20dp"
+            android:layout_marginStart="4dp"
+            app:backgroundTint="#E0E0E0"
+            android:textColor="#757575"/>
+    </LinearLayout>
+
     <androidx.cardview.widget.CardView
         android:id="@+id/cardForm"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="6dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:cardElevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/layoutAbas">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nova Consulta"
-                android:textColor="#2E7D32"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_marginBottom="16dp"/>
-
-            <!-- MÉDICO -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Nome do Médico"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="8dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editMedico"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- ESPECIALIDADE -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Especialidade"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_marginBottom="16dp">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editEspecialidade"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- DATA / HORA -->
             <LinearLayout
+                android:id="@+id/grupoConsulta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnData"
-                    android:layout_width="0dp"
-                    android:layout_height="50dp"
-                    android:layout_weight="1"
-                    android:text="📅 Data"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="#2E7D32"
-                    android:textColor="#2E7D32"
-                    android:layout_marginEnd="8dp"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnHora"
-                    android:layout_width="0dp"
-                    android:layout_height="50dp"
-                    android:layout_weight="1"
-                    android:text="⏰ Hora"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    app:strokeColor="#2E7D32"
-                    android:textColor="#2E7D32"/>
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/txtDataSelecionada"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Selecione data e hora..."
-                android:gravity="center"
-                android:textColor="#555"
-                android:layout_marginBottom="16dp"/>
-
-            <!-- INFO LEMBRETE -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="#E8F5E9"
-                android:padding="8dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_launcher_foreground"
-                    app:tint="#2E7D32"/>
+                android:orientation="vertical"
+                android:visibility="visible">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Lembrete automático: 2 horas antes"
-                    android:textSize="14sp"
+                    android:text="Agendar Médico"
                     android:textStyle="bold"
                     android:textColor="#2E7D32"
-                    android:layout_marginStart="8dp"/>
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editMedico"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nome do Médico"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editEspecialidade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Especialidade"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
+
+                    <EditText
+                        android:id="@+id/editDataConsulta"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Data"
+                        android:focusable="false"
+                        android:clickable="true"
+                        android:background="@android:drawable/edit_text"
+                        android:layout_marginEnd="4dp"/>
+
+                    <EditText
+                        android:id="@+id/editHoraConsulta"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Hora"
+                        android:focusable="false"
+                        android:clickable="true"
+                        android:background="@android:drawable/edit_text"
+                        android:layout_marginStart="4dp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/grupoRemedio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Novo Medicamento"
+                    android:textStyle="bold"
+                    android:textColor="#1976D2"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editNomeRemedio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nome do Remédio"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editDosagem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Dosagem (Ex: 50mg)"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editEstoque"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Qtd na caixa (Ex: 30)"
+                    android:inputType="number"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <EditText
+                    android:id="@+id/editHoraInicio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Hora da primeira dose"
+                    android:inputType="time"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:background="@android:drawable/edit_text"
+                    android:layout_marginBottom="12dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Frequência (Horas):"
+                    android:layout_marginBottom="4dp"/>
+
+                <RadioGroup
+                    android:id="@+id/radioFrequencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+                    <RadioButton android:id="@+id/rb8h" android:text="8h" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1"/>
+                    <RadioButton android:id="@+id/rb12h" android:text="12h" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1"/>
+                    <RadioButton android:id="@+id/rb24h" android:text="24h" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1"/>
+                </RadioGroup>
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAgendar"
+                android:id="@+id/btnConfirmarGeral"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:text="CONFIRMAR AGENDAMENTO"
-                android:textStyle="bold"
-                app:cornerRadius="8dp"
-                app:backgroundTint="#2E7D32"/>
-
+                android:layout_height="60dp"
+                android:text="AGENDAR CONSULTA"
+                app:backgroundTint="#2E7D32"
+                android:layout_marginTop="8dp"/>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- LISTA -->
-    <TextView
-        android:id="@+id/lblHistorico"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/layoutFiltros"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Próximas Consultas"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="#333"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/cardForm"
-        app:layout_constraintStart_toStartOf="parent"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/cardForm">
+
+        <TextView
+            android:id="@+id/lblLista"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Agenda de Hoje"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
+
+        <CheckBox
+            android:id="@+id/checkRemedios"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💊"
+            android:checked="true"
+            android:buttonTint="#1976D2" />
+
+        <CheckBox
+            android:id="@+id/checkMedicos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🩺"
+            android:checked="true"
+            android:buttonTint="#2E7D32"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerConsultas"
-        android:layout_width="0dp"
+        android:id="@+id/recyclerAgenda"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_margin="16dp"
-        app:layout_constraintTop_toBottomOf="@id/lblHistorico"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintTop_toBottomOf="@id/layoutFiltros"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>

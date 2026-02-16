@@ -3,8 +3,6 @@ package com.example.gerokernel.models
 import com.google.gson.annotations.SerializedName
 
 data class ConsultaModel(
-    val id: Int? = null,
-
     @SerializedName("usuario_id")
     val usuarioId: Int,
 
@@ -14,5 +12,8 @@ data class ConsultaModel(
     @SerializedName("data_hora")
     val dataHora: String,
 
-    val local: String? = ""
+    val local: String? = "Clínica Geral",
+
+    // El ID es deixa al final com a opcional per evitar errors en crear l'objecte
+    val id: Int? = null
 )
