@@ -22,12 +22,9 @@ const transporter = nodemailer.createTransport({
 
 // ==========================================
 // ROTA NOVA: O "TRAMPOLIM" (Bypass do Gmail) 🚀
-// O e-mail clica aqui (HTTP) -> Node.js -> Redireciona pro App (Deep Link)
 // ==========================================
 app.get('/abrir-app', (req, res) => {
     const email = req.query.email;
-
-    // O servidor manda o celular abrir o App
     console.log(`🦘 TRAMPOLIM: Redirecionando ${email} para o App...`);
     res.redirect(`gerokernel://redefinir?email=${email}`);
 });
@@ -85,7 +82,6 @@ app.post('/login', async (req, res) => {
 
 // ==========================================
 // ROTA 3: RECUPERAR SENHA (ATUALIZADA)
-// Envia link HTTP que redireciona para o App
 // ==========================================
 app.post('/recuperar-senha', async (req, res) => {
     const { email } = req.body;
@@ -100,12 +96,8 @@ app.post('/recuperar-senha', async (req, res) => {
             return res.status(404).json({ error: "Usuário não encontrado." });
         }
 
-        // ⚠️ CONFIGURAÇÃO DE IP (MUITO IMPORTANTE)
-        // Abra o terminal, digite ipconfig e pegue o endereço IPv4.
         const MEU_IP = "192.168.1.8"; // <--- TROQUE PELO SEU IP AQUI!!!
         const PORTA = 3000;
-
-        // Link seguro que o Gmail aceita (HTTP)
         const linkSeguro = `http://${MEU_IP}:${PORTA}/abrir-app?email=${email}`;
 
         await transporter.sendMail({
@@ -117,7 +109,6 @@ app.post('/recuperar-senha', async (req, res) => {
                     <h2 style="color: #2E7D32;">Olá, ${usuario.nome}!</h2>
                     <p>Recebemos um pedido para redefinir sua senha.</p>
                     <p>Toque no botão abaixo para criar uma nova senha:</p>
-
                     <a href="${linkSeguro}" style="
                         background-color: #2E7D32;
                         color: white;
@@ -130,11 +121,6 @@ app.post('/recuperar-senha', async (req, res) => {
                         font-size: 16px;">
                         CRIAR NOVA SENHA
                     </a>
-
-                    <p style="margin-top: 20px; color: #999; font-size: 12px;">
-                        Se não funcionar, copie este link no navegador do celular:<br>
-                        ${linkSeguro}
-                    </p>
                 </div>
             `
         });
@@ -149,139 +135,84 @@ app.post('/recuperar-senha', async (req, res) => {
 });
 
 // ==========================================
-// ROTA 4: REDEFINIR SENHA (SALVAR NO BANCO)
+// ROTA 4: REDEFINIR SENHA
 // ==========================================
 app.post('/redefinir-senha', async (req, res) => {
     const { email, novaSenha } = req.body;
-    console.log(`🔄 REDEFINIÇÃO: Trocando senha de ${email}`);
-
     try {
         const usuarioAtualizado = await prisma.usuarios.update({
             where: { email: email },
             data: { senha: novaSenha }
         });
-
-        console.log("✅ Senha atualizada com sucesso!");
         res.status(200).json(usuarioAtualizado);
-
     } catch (error) {
-        console.error("❌ Erro ao atualizar senha no banco:", error);
         res.status(500).json({ error: "Erro ao atualizar senha." });
     }
 });
 
-// ROTA 5: SALVAR SINAIS VITAIS (POST)
+// ROTA 5: SALVAR SINAIS VITAIS
 app.post('/sinais', async (req, res) => {
-  console.log("==> SINAIS: Recebendo medição...", req.body);
-
-  // CORREÇÃO: Ler 'usuario_id' (com underline) que vem do Android
   const { usuario_id, sistolica, diastolica, glicose } = req.body;
-
   try {
     const novoRegistro = await prisma.sinais_vitais.create({
       data: {
-        // CORREÇÃO: Usar a variável usuario_id que lemos acima
         usuario_id: Number(usuario_id),
         sistolica: Number(sistolica),
         diastolica: Number(diastolica),
         glicose: glicose ? Number(glicose) : null
       }
     });
-
-    console.log("✅ Sinais salvos com sucesso!");
     res.status(201).json(novoRegistro);
-
-
-
   } catch (error) {
-    console.error("❌ Erro ao salvar sinais:", error);
     res.status(500).json({ error: "Erro ao salvar dados." });
   }
 });
 
-// ==========================================
-// ROTA 6: BUSCAR HISTÓRICO (GET)
-// O Android chama para montar o gráfico
-// ==========================================
-// ROTA 6: BUSCAR HISTÓRICO (GET)
+// ROTA 6: BUSCAR HISTÓRICO
 app.get('/sinais/:usuarioId', async (req, res) => {
   const { usuarioId } = req.params;
-  console.log(`📈 GRÁFICO: Buscando dados do usuário ${usuarioId}`);
-
   try {
-    // 1. Tabela corrigida: sinais_vitais
     const historico = await prisma.sinais_vitais.findMany({
-      where: {
-          // 2. Coluna corrigida: usuario_id (também precisa mudar aqui!)
-          usuario_id: Number(usuarioId)
-      },
+      where: { usuario_id: Number(usuarioId) },
       orderBy: { data_hora: 'asc' },
       take: 20
     });
-
     res.status(200).json(historico);
-
-
   } catch (error) {
-    console.error("❌ Erro ao buscar histórico:", error);
     res.status(500).json({ error: "Erro ao buscar dados." });
   }
 });
 
 // === ROTAS DE AGENDA ===
-
-// 1. Criar Consulta
 app.post('/consultas', async (req, res) => {
   const { usuario_id, medico, especialidade, data_hora, local } = req.body;
-  console.log("📅 Recebendo consulta:", data_hora); // Debug para ver o que chega
-
   try {
-    // 1. Quebramos a string "16/02/2026 19:55"
     const [dataParte, horaParte] = data_hora.split(' ');
     const [dia, mes, ano] = dataParte.split('/');
     const [horas, minutos] = horaParte.split(':');
+    const dataFormatada = new Date(parseInt(ano), parseInt(mes) - 1, parseInt(dia), parseInt(horas), parseInt(minutos));
 
-    // 2. Criamos o objeto Date no formato que o Prisma aceita (Ano, Mês-1, Dia, Hora, Min)
-    // O mês no JS começa em 0 (Janeiro = 0), por isso subtraímos 1
-    const dataFormatada = new Date(
-        parseInt(ano),
-        parseInt(mes) - 1,
-        parseInt(dia),
-        parseInt(horas),
-        parseInt(minutos)
-    );
-
-    // 3. Verificação de segurança DevOps
-    if (isNaN(dataFormatada.getTime())) {
-        throw new Error("Formato de data inválido!");
-    }
+    if (isNaN(dataFormatada.getTime())) throw new Error("Formato de data inválido!");
 
     const nova = await prisma.consultas.create({
       data: {
         usuario_id: Number(usuario_id),
-        medico,
-        especialidade,
-        data_hora: dataFormatada, // Agora o Prisma recebe um objeto Date válido
+        medico, especialidade,
+        data_hora: dataFormatada,
         local: local || "Não informado"
       }
     });
-
-    console.log("✅ Consulta salva no MySQL!");
     res.json(nova);
-
-  } catch (error: any) { // Mudando para 'any' ou tratando o tipo
-      console.error("❌ Erro no Prisma:", error.message);
+  } catch (error: any) {
       res.status(500).json({ error: "Erro ao formatar data ou salvar no banco." });
   }
 });
 
-// 2. Listar Consultas (Ordenadas pela data mais próxima)
 app.get('/consultas/:usuarioId', async (req, res) => {
-  const { usuarioId } = req.params;
   try {
     const lista = await prisma.consultas.findMany({
-      where: { usuario_id: Number(usuarioId) },
-      orderBy: { data_hora: 'asc' } // Da mais antiga para a mais nova
+      where: { usuario_id: Number(req.params.usuarioId) },
+      orderBy: { data_hora: 'asc' }
     });
     res.json(lista);
   } catch (error) {
@@ -289,89 +220,56 @@ app.get('/consultas/:usuarioId', async (req, res) => {
   }
 });
 
-// 3. Deletar Consulta (Caso cancelem)
 app.delete('/consultas/:id', async (req, res) => {
-  const { id } = req.params;
   try {
-    await prisma.consultas.delete({ where: { id: Number(id) } });
+    await prisma.consultas.delete({ where: { id: Number(req.params.id) } });
     res.json({ message: "Deletado com sucesso" });
   } catch (error) {
     res.status(500).json({ error: "Erro ao deletar" });
   }
 });
 
-// ... (seu código anterior continua igual) ...
-
 // ==========================================
-// ROTA 7: HIDRATAÇÃO (Salvar Copo d'água) 💧
+// ROTA 7 e 8: HIDRATAÇÃO 💧
 // ==========================================
 app.post('/hidratacao', async (req, res) => {
   const { usuario_id, quantidade_ml } = req.body;
-  console.log(`💧 HIDRATAÇÃO: Usuário ${usuario_id} bebeu ${quantidade_ml}ml`);
-
   try {
     const registro = await prisma.hidratacao.create({
-      data: {
-        usuario_id: Number(usuario_id),
-        quantidade_ml: Number(quantidade_ml),
-        data_hora: new Date()
-      }
+      data: { usuario_id: Number(usuario_id), quantidade_ml: Number(quantidade_ml), data_hora: new Date() }
     });
     res.status(201).json(registro);
   } catch (error) {
-    console.error("❌ Erro ao salvar hidratação:", error);
     res.status(500).json({ error: "Erro ao registrar hidratação." });
   }
 });
 
-// ==========================================
-// ROTA 8: HIDRATAÇÃO (Pegar Histórico) 📊
-// ==========================================
 app.get('/hidratacao/:usuarioId', async (req, res) => {
-  const { usuarioId } = req.params;
   try {
     const registros = await prisma.hidratacao.findMany({
-      where: { usuario_id: Number(usuarioId) },
+      where: { usuario_id: Number(req.params.usuarioId) },
       orderBy: { data_hora: 'desc' }
     });
     res.status(200).json(registros);
   } catch (error) {
-    console.error("❌ Erro ao buscar hidratação:", error);
     res.status(500).json({ error: "Erro ao buscar histórico." });
   }
 });
 
 // ==========================================
 // ROTA 9: FICHA MÉDICA COMPLETA 🏥
-// Busca dados de emergência + remédios
 // ==========================================
 app.get('/ficha/:usuarioId', async (req, res) => {
   const { usuarioId } = req.params;
-
   try {
-    // 1. Busca a ficha básica
-    const ficha = await prisma.ficha_medica.findUnique({
-      where: { usuario_id: Number(usuarioId) }
-    });
-
-    // 2. Busca os remédios
-    const remedios = await prisma.medicamentos.findMany({
-      where: { usuario_id: Number(usuarioId) }
-    });
-
-    // 3. Manda tudo junto
-    res.json({
-      ...ficha, // Espalha os dados da ficha (tipo, alergias...)
-      lista_medicamentos: remedios // Adiciona a lista de remédios
-    });
-
+    const ficha = await prisma.ficha_medica.findUnique({ where: { usuario_id: Number(usuarioId) } });
+    const remedios = await prisma.medicamentos.findMany({ where: { usuario_id: Number(usuarioId) } });
+    res.json({ ...ficha, lista_medicamentos: remedios });
   } catch (error) {
-    console.error("Erro na ficha:", error);
     res.status(500).json({ error: "Erro ao buscar ficha" });
   }
 });
 
-// Rota para SALVAR/ATUALIZAR a ficha (Postman)
 app.post('/ficha', async (req, res) => {
     const { usuario_id, tipo_sanguineo, alergias, contato_telefone, contato_nome } = req.body;
     try {
@@ -382,67 +280,59 @@ app.post('/ficha', async (req, res) => {
         });
         res.json(ficha);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ error: "Erro ao salvar ficha" });
     }
 });
 
 // ==========================================
 // ROTA 10: ATUALIZAR PERFIL COMPLETO ⚙️
-// Atualiza dados do usuário E da ficha médica
 // ==========================================
 app.put('/perfil/:usuarioId', async (req, res) => {
   const { usuarioId } = req.params;
   const { nome, email, telefone, tipo_sanguineo, alergias } = req.body;
-
   try {
-    // 1. Atualiza dados básicos (Tabela Usuarios)
     const usuarioAtualizado = await prisma.usuarios.update({
       where: { id: Number(usuarioId) },
       data: { nome, email }
     });
-
-    // 2. Atualiza ou Cria a Ficha Médica (Tabela Ficha)
-    // Usamos 'upsert': se existe, atualiza; se não, cria.
     const fichaAtualizada = await prisma.ficha_medica.upsert({
       where: { usuario_id: Number(usuarioId) },
-      update: {
-        contato_telefone: telefone,
-        tipo_sanguineo: tipo_sanguineo,
-        alergias: alergias
-      },
-      create: {
-        usuario_id: Number(usuarioId),
-        contato_telefone: telefone,
-        tipo_sanguineo: tipo_sanguineo,
-        alergias: alergias
-      }
+      update: { contato_telefone: telefone, tipo_sanguineo, alergias },
+      create: { usuario_id: Number(usuarioId), contato_telefone: telefone, tipo_sanguineo, alergias }
     });
-
     res.json({ usuario: usuarioAtualizado, ficha: fichaAtualizada });
-
   } catch (error) {
-    console.error("Erro ao atualizar perfil:", error);
     res.status(500).json({ error: "Erro ao atualizar dados." });
   }
 });
 
+
+// ==========================================
+// ROTA DE CRONOGRAMA DE MEDICAMENTOS (ATUALIZADA) 💊
+// ==========================================
 app.post('/medicamentos', async (req, res) => {
   const { usuario_id, nome_remedio, dosagem, frequencia_horas, quantidade_total, horario_inicio } = req.body;
 
   try {
-    // 1. Prepara a data base (Hoje na hora escolhida)
+    // 1. Verifica se já entra em alerta de estoque crítico (10 unidades ou menos)
+    let mensagemAlerta = null;
+    if (Number(quantidade_total) <= 10) {
+      mensagemAlerta = "⚠️ ATENÇÃO: O estoque inicial já está crítico (10 unidades ou menos)!";
+    }
+
+    // 2. Prepara a data base (Hoje na hora escolhida)
     const [horas, minutos] = horario_inicio.split(':');
     let dataReferencia = new Date();
     dataReferencia.setHours(parseInt(horas), parseInt(minutos), 0, 0);
 
     const frequenciaMs = Number(frequencia_horas) * 60 * 60 * 1000;
     const cronograma = [];
+    const totalDoses = Number(quantidade_total) > 0 ? Number(quantidade_total) : 1;
 
-    // 2. Loop que gera as doses e diminui o estoque virtualmente
-    for (let i = 0; i < Number(quantidade_total); i++) {
+    // 3. Loop que gera as doses e diminui o estoque virtualmente
+    for (let i = 0; i < totalDoses; i++) {
       // Cálculo da quantidade que restará APÓS tomar essa dose
-      const estoqueRestante = Number(quantidade_total) - i;
+      const estoqueRestante = totalDoses - i;
 
       cronograma.push({
         usuario_id: Number(usuario_id),
@@ -454,13 +344,17 @@ app.post('/medicamentos', async (req, res) => {
       });
     }
 
-    // 3. Salva o cronograma completo no MySQL
+    // 4. Salva o cronograma completo no MySQL
     const resultado = await prisma.medicamentos.createMany({
       data: cronograma
     });
 
     console.log(`✅ Cronograma gerado: ${resultado.count} doses.`);
-    res.status(201).json(resultado);
+    res.status(201).json({
+      message: "Cronograma gerado",
+      count: resultado.count,
+      alerta: mensagemAlerta
+    });
 
   } catch (error) {
     console.error("❌ Erro:", error);
@@ -469,11 +363,9 @@ app.post('/medicamentos', async (req, res) => {
 });
 
 app.get('/medicamentos/:usuarioId', async (req, res) => {
-  const { usuarioId } = req.params;
-  console.log(`🔍 BUSCA: Remédios do usuário ${usuarioId}`);
   try {
     const lista = await prisma.medicamentos.findMany({
-      where: { usuario_id: Number(usuarioId) }
+      where: { usuario_id: Number(req.params.usuarioId) }
     });
     res.json(lista);
   } catch (error) {
@@ -490,7 +382,7 @@ app.post('/medicamentos/tomar/:id', async (req, res) => {
   try {
     const med = await prisma.medicamentos.findUnique({
         where: { id: Number(id) },
-        include: { usuarios: true } // Incluímos o usuário para saber o nome/email dele no aviso
+        include: { usuarios: true }
     });
 
     if (med && med.quantidade_total !== null && med.quantidade_total > 0) {
@@ -501,10 +393,7 @@ app.post('/medicamentos/tomar/:id', async (req, res) => {
         data: { quantidade_total: novaQuantidade }
       });
 
-      // 🚨 LÓGICA DE EVENTO: ESTOQUE BAIXO (Avisa quando chegar em 10 ou menos)
-      // Dentro da Rota 12, após atualizar a quantidade no Prisma
       if (novaQuantidade <= 10) {
-          // 📧 CANAL 1: E-MAIL (Redundância/Histórico)
           if (med.usuarios && med.usuarios.email) {
               await transporter.sendMail({
                   from: '"GeroKernel" <jpzurlo.jz@gmail.com>',
@@ -514,7 +403,6 @@ app.post('/medicamentos/tomar/:id', async (req, res) => {
               });
           }
 
-          // 📱 CANAL 2: RESPOSTA DO APP (Alerta Imediato)
           return res.status(200).json({
               ...atualizado,
               alerta_estoque: true,
@@ -536,15 +424,29 @@ app.post('/medicamentos/tomar/:id', async (req, res) => {
   }
 });
 
-// No seu arquivo index.ts
+// ==========================================
+// ROTA DE EXCLUSÃO (BLINDADA CONTRA P2025) 🛡️
+// ==========================================
 app.delete('/medicamentos/:id', async (req, res) => {
   const { id } = req.params;
+  console.log(`🗑️ CHEGOU PEDIDO DE EXCLUSÃO PARA O ID: ${id}`); // <--- ADICIONE ESTA LINHA
+
   try {
+    const existe = await prisma.medicamentos.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!existe) {
+      return res.status(404).json({ error: "Medicamento não encontrado no servidor. Pode ter sido excluído ou só existe offline." });
+    }
+
     await prisma.medicamentos.delete({
       where: { id: Number(id) }
     });
+
     console.log(`🗑️ Medicamento ID ${id} excluído.`);
     res.json({ message: "Excluído com sucesso" });
+
   } catch (error) {
     console.error("Erro ao deletar:", error);
     res.status(500).json({ error: "Erro ao excluir o registro." });
