@@ -95,7 +95,6 @@ class SinaisVitaisActivity : AppCompatActivity() {
 
         cardFeedback = findViewById(R.id.cardFeedback)
         txtFeedback = findViewById(R.id.txtMensagemFeedback)
-        iconFeedback = findViewById(R.id.iconFeedback)
         txtResumoTexto = findViewById(R.id.txtResumoTexto)
         txtDicaDoDia = findViewById(R.id.txtDicaDoDia)
         cardResumoDia = findViewById(R.id.cardResumoDia)

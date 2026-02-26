@@ -5,7 +5,6 @@ import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.gerokernel.R
@@ -22,11 +21,10 @@ class SinaisAdapter(
         val txtHora: TextView = view.findViewById(R.id.txtHora)
         val txtPressao: TextView = view.findViewById(R.id.txtPressao)
         val txtGlicose: TextView = view.findViewById(R.id.txtGlicose)
-        val imgStatus: ImageView = view.findViewById(R.id.imgStatus)
+        // Removido o imgStatus que estava puxando o logo sem querer!
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // Certifique-se de ter criado o layout 'item_sinal.xml'
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_sinal, parent, false)
         return ViewHolder(view)
     }
@@ -51,10 +49,7 @@ class SinaisAdapter(
 
         // 2. FORMATAÇÃO POPULAR (O TRUQUE DO 12 POR 8)
         fun formatarInteligente(valor: Int): String {
-            // Se for menor que 50 (tipo 12 ou 16), o idoso já digitou simplificado. Não divide!
             if (valor < 50) return valor.toString()
-
-            // Se for maior (tipo 120 ou 160), aí sim divide por 10.
             return if (valor % 10 == 0) (valor / 10).toString() else (valor / 10.0).toString()
         }
 
@@ -63,27 +58,28 @@ class SinaisAdapter(
 
         holder.txtPressao.text = "$sysPop/$diaPop"
 
-
-        // 3. GLICOSE (Mantém o número original)
+        // 3. GLICOSE
         if (item.glicose != null && item.glicose > 0) {
             holder.txtGlicose.text = "${item.glicose}"
         } else {
             holder.txtGlicose.text = "-"
         }
 
-        // 4. CORES DE ALERTA (SEMÁFORO)
+        // 4. CORES DE ALERTA (Fundo da linha em tons pastéis + texto forte)
         if (item.sistolica >= 140 || item.diastolica >= 90) {
             // Vermelho (Pressão Alta)
             holder.txtPressao.setTextColor(Color.parseColor("#D32F2F"))
-            holder.imgStatus.setColorFilter(Color.parseColor("#D32F2F"))
+            holder.itemView.setBackgroundColor(Color.parseColor("#FFEBEE")) // Fundo vermelhinho claro
+
         } else if (item.sistolica >= 130 || item.diastolica >= 85) {
             // Laranja (Atenção)
             holder.txtPressao.setTextColor(Color.parseColor("#F57F17"))
-            holder.imgStatus.setColorFilter(Color.parseColor("#F57F17"))
+            holder.itemView.setBackgroundColor(Color.parseColor("#FFF3E0")) // Fundo laranjinha claro
+
         } else {
             // Verde (Normal)
             holder.txtPressao.setTextColor(Color.parseColor("#2E7D32"))
-            holder.imgStatus.setColorFilter(Color.parseColor("#2E7D32"))
+            holder.itemView.setBackgroundColor(Color.parseColor("#E8F5E9")) // Fundo verdinho claro
         }
     }
 

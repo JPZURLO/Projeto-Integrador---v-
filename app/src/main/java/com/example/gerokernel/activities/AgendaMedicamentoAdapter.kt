@@ -16,8 +16,8 @@ import java.util.Locale
 
 class AgendaMedicamentoAdapter(
     private val context: Context,
-    private val onMedicamentoCheck: (Medicamento) -> Unit, // 🔥 Separamos os cliques!
-    private val onConsultaCheck: (ConsultaModel) -> Unit,  // 🔥
+    private val onMedicamentoCheck: (Medicamento) -> Unit,
+    private val onConsultaCheck: (ConsultaModel) -> Unit,
     private val onExcluirClick: (Int) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -68,23 +68,28 @@ class AgendaMedicamentoAdapter(
             val horaDoRemedio = item.horario_agendado?.time ?: 0L
             val jaTomou = item.tomado
 
+            // 🔥 SEMÁFORO CORRIGIDO (Apenas fundo e texto)
             if (jaTomou) {
+                // TOMOU = VERDE (E esconde o botão para não clicar de novo)
                 cardFundo.setCardBackgroundColor(Color.parseColor("#E8F5E9"))
                 txtHora.setTextColor(Color.parseColor("#2E7D32"))
-                btnTomar.setColorFilter(Color.parseColor("#A5D6A7"))
-            } else if (horaDoRemedio < agora) {
+                btnTomar.visibility = View.GONE
+
+            } else if (horaDoRemedio > 0L && horaDoRemedio < agora) {
+                // ATRASADO = VERMELHO
                 cardFundo.setCardBackgroundColor(Color.parseColor("#FFEBEE"))
                 txtHora.setTextColor(Color.parseColor("#D32F2F"))
-                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+                btnTomar.visibility = View.VISIBLE
+
             } else {
+                // FUTURO = BRANCO
                 cardFundo.setCardBackgroundColor(Color.WHITE)
                 txtHora.setTextColor(Color.parseColor("#0288D1"))
-                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+                btnTomar.visibility = View.VISIBLE
             }
 
             txtDosagem.setTextColor(if (qtd <= 10 && !jaTomou) Color.RED else Color.GRAY)
 
-            btnTomar.visibility = View.VISIBLE
             btnTomar.setOnClickListener { onMedicamentoCheck(item) }
 
             btnExcluir.setOnClickListener {
@@ -111,28 +116,29 @@ class AgendaMedicamentoAdapter(
             val agora = System.currentTimeMillis()
             val jaFoi = item.realizada
 
-            // 🔥 O SEMÁFORO DA CONSULTA!
+            // 🔥 SEMÁFORO DA CONSULTA CORRIGIDO
             if (jaFoi) {
                 // FOI NA CONSULTA = VERDE
                 cardFundo.setCardBackgroundColor(Color.parseColor("#E8F5E9"))
                 txtHora.setTextColor(Color.parseColor("#2E7D32"))
                 txtInfo.setTextColor(Color.parseColor("#2E7D32"))
-                btnTomar.setColorFilter(Color.parseColor("#A5D6A7"))
+                btnTomar.visibility = View.GONE // Esconde o botão pq já passou
+
             } else if (horaDaConsulta > 0L && horaDaConsulta < agora) {
                 // FALTOU NA CONSULTA (ATRASADO) = VERMELHO
                 cardFundo.setCardBackgroundColor(Color.parseColor("#FFEBEE"))
                 txtHora.setTextColor(Color.parseColor("#D32F2F"))
                 txtInfo.setTextColor(Color.parseColor("#D32F2F"))
-                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+                btnTomar.visibility = View.VISIBLE
+
             } else {
                 // CONSULTA NO FUTURO = BRANCO
                 cardFundo.setCardBackgroundColor(Color.WHITE)
                 txtHora.setTextColor(Color.parseColor("#0288D1"))
                 txtInfo.setTextColor(Color.parseColor("#2E7D32"))
-                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+                btnTomar.visibility = View.VISIBLE
             }
 
-            btnTomar.visibility = View.VISIBLE // Agora o botão aparece pro médico também!
             btnTomar.setOnClickListener { onConsultaCheck(item) }
 
             btnExcluir.setOnClickListener {
