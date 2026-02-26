@@ -11,15 +11,23 @@ import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.gerokernel.R
 import com.example.gerokernel.api.RetrofitClient
+import com.example.gerokernel.database.AppDatabase
 import com.example.gerokernel.models.*
+import com.example.gerokernel.model.entity.MedicamentoEntity
+import com.example.gerokernel.model.entity.ConsultaEntity
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
@@ -27,8 +35,8 @@ class AgendaActivity : AppCompatActivity() {
 
     private var modoAtual = "CONSULTA"
     private var usuarioId = 0
+    private lateinit var database: AppDatabase
 
-    // Componentes de UI
     private lateinit var grupoConsulta: LinearLayout
     private lateinit var grupoRemedio: LinearLayout
     private lateinit var btnAbaConsulta: MaterialButton
@@ -38,7 +46,6 @@ class AgendaActivity : AppCompatActivity() {
     private lateinit var checkMedicos: CheckBox
     private lateinit var lblLista: TextView
 
-    // Campos de entrada
     private lateinit var editMedico: EditText
     private lateinit var editEspecialidade: EditText
     private lateinit var editDataConsulta: EditText
@@ -49,7 +56,6 @@ class AgendaActivity : AppCompatActivity() {
     private lateinit var editHoraInicio: EditText
     private lateinit var radioFrequencia: RadioGroup
 
-    // RecyclerView e Dados
     private lateinit var recyclerAgenda: RecyclerView
     private lateinit var adapter: AgendaMedicamentoAdapter
     private var listaMedicamentos: List<Medicamento> = emptyList()
@@ -62,11 +68,14 @@ class AgendaActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("SessaoUsuario", Context.MODE_PRIVATE)
         usuarioId = prefs.getInt("ID_USUARIO", 0)
 
+        database = AppDatabase.getDatabase(this)
+
         inicializarComponentes()
         configurarCliquesAbas()
         configurarRelogios()
         configurarFiltros()
-        carregarDadosGeral() // Inicia o pipeline de busca
+
+        carregarDadosGeral()
     }
 
     private fun inicializarComponentes() {
@@ -95,9 +104,9 @@ class AgendaActivity : AppCompatActivity() {
         recyclerAgenda = findViewById(R.id.recyclerAgenda)
         recyclerAgenda.layoutManager = LinearLayoutManager(this)
 
-        // Inicializa o adapter com os callbacks de clique
         adapter = AgendaMedicamentoAdapter(this,
-            { id -> tomarRemedio(id) },
+            { med -> confirmarTomarRemedio(med) },
+            { consulta -> confirmarPresencaConsulta(consulta) }, // 🔥 PASSA A CONSULTA AQUI!
             { id -> excluirDose(id) }
         )
         recyclerAgenda.adapter = adapter
@@ -109,27 +118,19 @@ class AgendaActivity : AppCompatActivity() {
 
     private fun configurarRelogios() {
         val cal = Calendar.getInstance()
-
-        // Seletores para Consultas
         editDataConsulta.setOnClickListener {
             DatePickerDialog(this, { _, ano, mes, dia ->
-                val data = String.format(Locale.getDefault(), "%02d/%02d/%d", dia, mes + 1, ano)
-                editDataConsulta.setText(data)
+                editDataConsulta.setText(String.format(Locale.getDefault(), "%02d/%02d/%d", dia, mes + 1, ano))
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
         }
-
         editHoraConsulta.setOnClickListener {
             TimePickerDialog(this, { _, h, m ->
-                val hora = String.format(Locale.getDefault(), "%02d:%02d", h, m)
-                editHoraConsulta.setText(hora)
+                editHoraConsulta.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
             }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).show()
         }
-
-        // Seletor para Remédios
         editHoraInicio.setOnClickListener {
             TimePickerDialog(this, { _, h, m ->
-                val hora = String.format(Locale.getDefault(), "%02d:%02d", h, m)
-                editHoraInicio.setText(hora)
+                editHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
             }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).show()
         }
     }
@@ -141,31 +142,146 @@ class AgendaActivity : AppCompatActivity() {
     }
 
     private fun carregarDadosGeral() {
-        // Busca Medicamentos primeiro
+        lifecycleScope.launch(Dispatchers.IO) {
+            val localEntities = database.medicamentoDao().listarPorUsuario(usuarioId)
+            val formatoHora = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+            val listaLocal = localEntities.map { entity ->
+                val dateAux = try { formatoHora.parse(entity.horario) } catch (e: Exception) { null }
+                Medicamento(
+                    id = entity.idRemoto ?: entity.idLocal,
+                    nome_remedio = entity.nome,
+                    dosagem = entity.dosagem,
+                    quantidade_total = entity.quantidade_total,
+                    horario_agendado = dateAux,
+                    tomado = entity.tomado
+                )
+            }
+            withContext(Dispatchers.Main) {
+                listaMedicamentos = listaLocal
+                aplicarFiltros()
+            }
+        }
+
         RetrofitClient.instance.getMedicamentos(usuarioId).enqueue(object : Callback<List<Medicamento>> {
             override fun onResponse(call: Call<List<Medicamento>>, response: Response<List<Medicamento>>) {
                 if (response.isSuccessful) {
-                    listaMedicamentos = response.body() ?: emptyList()
-                    buscarConsultas() // Depois busca as consultas
+                    val listaOnline = response.body() ?: emptyList()
+                    val formatoHoraStr = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val localEntitiesMap = database.medicamentoDao().listarPorUsuario(usuarioId).associateBy { it.idRemoto }
+
+                        val entidades = listaOnline.map { med ->
+                            val horaString = med.horario_agendado?.let { formatoHoraStr.format(it) } ?: "00:00"
+                            val jaTomado = localEntitiesMap[med.id]?.tomado ?: false
+
+                            MedicamentoEntity(
+                                idRemoto = med.id,
+                                nome = med.nome_remedio,
+                                dosagem = med.dosagem,
+                                horario = horaString,
+                                usuarioId = usuarioId,
+                                sincronizado = true,
+                                quantidade_total = med.quantidade_total ?: 0,
+                                tomado = jaTomado
+                            )
+                        }
+
+                        database.medicamentoDao().limparTudo()
+                        database.medicamentoDao().salvarVarios(entidades)
+
+                        val novasEntities = database.medicamentoDao().listarPorUsuario(usuarioId)
+                        val formatoData = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+                        withContext(Dispatchers.Main) {
+                            listaMedicamentos = novasEntities.map { entity ->
+                                val dAux = try { formatoData.parse(entity.horario) } catch (e: Exception) { null }
+                                Medicamento(
+                                    id = entity.idRemoto ?: entity.idLocal,
+                                    nome_remedio = entity.nome,
+                                    dosagem = entity.dosagem,
+                                    quantidade_total = entity.quantidade_total,
+                                    horario_agendado = dAux,
+                                    tomado = entity.tomado
+                                )
+                            }
+                            buscarConsultas()
+                        }
+                    }
                 }
             }
             override fun onFailure(call: Call<List<Medicamento>>, t: Throwable) {
-                Log.e("AGENDA_DEBUG", "Erro medicamentos: ${t.message}")
+                buscarConsultas()
             }
         })
     }
 
     private fun buscarConsultas() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val localEntities = database.consultaDao().listarPorUsuario(usuarioId)
+            val listaLocal = localEntities.map {
+                ConsultaModel(
+                    id = it.idRemoto ?: it.idLocal,
+                    usuarioId = it.usuarioId,
+                    medico = it.medico,
+                    especialidade = it.especialidade,
+                    dataHora = it.dataHora,
+                    local = it.localConsulta,
+                    realizada = it.realizada // 🔥 LÊ DO BANCO SE FOI!
+                )
+            }
+            withContext(Dispatchers.Main) {
+                listaConsultas = listaLocal
+                aplicarFiltros()
+            }
+        }
+
         RetrofitClient.instance.listarConsultas(usuarioId).enqueue(object : Callback<List<ConsultaModel>> {
             override fun onResponse(call: Call<List<ConsultaModel>>, response: Response<List<ConsultaModel>>) {
                 if (response.isSuccessful) {
-                    listaConsultas = response.body() ?: emptyList()
-                    aplicarFiltros() // Atualiza a lista unificada
+                    val listaOnline = response.body() ?: emptyList()
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        // Preserva a presença que está no banco local!
+                        val localEntitiesMap = database.consultaDao().listarPorUsuario(usuarioId).associateBy { it.idRemoto }
+
+                        val entidades = listaOnline.map { con ->
+                            val jaFoi = localEntitiesMap[con.id]?.realizada ?: false
+
+                            ConsultaEntity(
+                                idRemoto = con.id,
+                                medico = con.medico,
+                                especialidade = con.especialidade,
+                                dataHora = con.dataHora,
+                                localConsulta = con.local ?: "Não informado",
+                                usuarioId = usuarioId,
+                                sincronizado = true,
+                                realizada = jaFoi // 🔥 MANTÉM A PRESENÇA!
+                            )
+                        }
+                        database.consultaDao().limparTudo()
+                        database.consultaDao().salvarVarios(entidades)
+
+                        val novasEntities = database.consultaDao().listarPorUsuario(usuarioId)
+                        withContext(Dispatchers.Main) {
+                            listaConsultas = novasEntities.map {
+                                ConsultaModel(
+                                    id = it.idRemoto ?: it.idLocal,
+                                    usuarioId = it.usuarioId,
+                                    medico = it.medico,
+                                    especialidade = it.especialidade,
+                                    dataHora = it.dataHora,
+                                    local = it.localConsulta,
+                                    realizada = it.realizada
+                                )
+                            }
+                            aplicarFiltros()
+                        }
+                    }
                 }
             }
-            override fun onFailure(call: Call<List<ConsultaModel>>, t: Throwable) {
-                Log.e("AGENDA_DEBUG", "Erro consultas: ${t.message}")
-            }
+            override fun onFailure(call: Call<List<ConsultaModel>>, t: Throwable) {}
         })
     }
 
@@ -187,118 +303,221 @@ class AgendaActivity : AppCompatActivity() {
         val data = editDataConsulta.text.toString()
         val hora = editHoraConsulta.text.toString()
 
-        if (medico.isEmpty() || data.isEmpty() || hora.isEmpty()) {
-            Toast.makeText(this, "Preencha Médico, Data e Hora!", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (medico.isEmpty() || data.isEmpty() || hora.isEmpty()) return
 
-        val request = ConsultaModel(
-            usuarioId = usuarioId,
-            medico = medico,
-            especialidade = especialidade,
-            dataHora = "$data $hora",
-            local = "Não informado"
-        )
+        val dataHoraCompleta = "$data $hora"
 
-        RetrofitClient.instance.salvarConsulta(request).enqueue(object : Callback<Void> {
-            override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                if (response.isSuccessful) {
-                    Toast.makeText(this@AgendaActivity, "Consulta Agendada! 🩺", Toast.LENGTH_SHORT).show()
-                    limparCampos()
-                    carregarDadosGeral() // Recarrega para mostrar na lista
+        try {
+            val formatoConsulta = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val dataDaConsulta = formatoConsulta.parse(dataHoraCompleta)
+            if (dataDaConsulta != null) {
+                val tempoUmaHoraAntes = dataDaConsulta.time - (60 * 60 * 1000)
+
+                if (tempoUmaHoraAntes > System.currentTimeMillis()) {
+                    agendarNotificacaoAndroid(
+                        id = (System.currentTimeMillis() % 10000).toInt(),
+                        titulo = "Lembrete de Consulta! \uD83E\uDE7A",
+                        mensagem = "Você tem consulta com $medico ($especialidade) em 1 hora!",
+                        tempoEmMilisegundos = tempoUmaHoraAntes
+                    )
                 }
             }
-            override fun onFailure(call: Call<Void>, t: Throwable) {
-                Log.e("AGENDA_DEBUG", "Erro salvar consulta: ${t.message}")
+        } catch (e: Exception) {}
+
+        val novaConsulta = ConsultaEntity(
+            medico = medico,
+            especialidade = especialidade,
+            dataHora = dataHoraCompleta,
+            localConsulta = "Não informado",
+            usuarioId = usuarioId,
+            sincronizado = false,
+            realizada = false // 🔥 NASCE COMO NÃO REALIZADA
+        )
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            database.consultaDao().salvar(novaConsulta)
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@AgendaActivity, "Consulta Agendada e Alarme Ligado!", Toast.LENGTH_SHORT).show()
+                limparCampos()
+                buscarConsultas()
+
+                val request = ConsultaModel(
+                    usuarioId = usuarioId,
+                    medico = medico,
+                    especialidade = especialidade,
+                    dataHora = dataHoraCompleta,
+                    local = "Não informado"
+                )
+
+                RetrofitClient.instance.salvarConsulta(request).enqueue(object : Callback<Void> {
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                        buscarConsultas()
+                    }
+                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                })
             }
-        })
+        }
     }
 
     private fun salvarRemedio() {
         val nome = editNomeRemedio.text.toString()
         val hora = editHoraInicio.text.toString()
+        val qtdStr = editEstoque.text.toString()
+        val qtd = qtdStr.toIntOrNull() ?: 0
+        val dosagemTexto = editDosagem.text.toString()
 
-        if (nome.isEmpty() || hora.isEmpty()) {
-            Toast.makeText(this, "Preencha o nome e a hora!", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (nome.isEmpty() || hora.isEmpty()) return
 
         val frequencia = when (radioFrequencia.checkedRadioButtonId) {
             R.id.rb8h -> 8
             R.id.rb12h -> 12
             R.id.rb24h -> 24
-            else -> 0
+            else -> 24
         }
 
-        val request = MedicamentoRequest(
-            usuario_id = usuarioId,
-            nome_remedio = nome,
-            dosagem = editDosagem.text.toString(),
-            horario_inicio = hora,
-            frequencia_horas = frequencia,
-            quantidade_total = editEstoque.text.toString().toIntOrNull() ?: 0
-        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            val listaLocal = mutableListOf<MedicamentoEntity>()
+            val formatoHora = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val dataBase = try { formatoHora.parse(hora) } catch (e: Exception) { java.util.Date() }
 
-        RetrofitClient.instance.salvarMedicamento(request).enqueue(object : Callback<Void> {
-            override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                if (response.isSuccessful) {
-                    Toast.makeText(this@AgendaActivity, "Cronograma Gerado! ✅", Toast.LENGTH_SHORT).show()
-                    limparCampos()
-                    carregarDadosGeral()
-                }
+            val cal = Calendar.getInstance()
+            if (dataBase != null) cal.time = dataBase
+
+            val totalDoses = if (qtd > 0) qtd else 1
+
+            for (i in 0 until totalDoses) {
+                val horaFormatada = formatoHora.format(cal.time)
+
+                listaLocal.add(
+                    MedicamentoEntity(
+                        nome = nome,
+                        dosagem = dosagemTexto,
+                        horario = horaFormatada,
+                        usuarioId = usuarioId,
+                        sincronizado = false,
+                        quantidade_total = totalDoses - i,
+                        tomado = false
+                    )
+                )
+
+                agendarNotificacaoAndroid(
+                    id = (System.currentTimeMillis() % 10000).toInt() + i,
+                    titulo = "Hora do Remédio! \uD83D\uDC8A",
+                    mensagem = "Está na hora de tomar: $nome ($dosagemTexto)",
+                    tempoEmMilisegundos = cal.timeInMillis
+                )
+                cal.add(Calendar.HOUR_OF_DAY, frequencia)
             }
-            override fun onFailure(call: Call<Void>, t: Throwable) {
-                Log.e("AGENDA_DEBUG", "Erro salvar remédio: ${t.message}")
+
+            database.medicamentoDao().salvarVarios(listaLocal)
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@AgendaActivity, "Cronograma Gerado e Alarmes Ativados!", Toast.LENGTH_SHORT).show()
+                limparCampos()
+                carregarDadosGeral()
+
+                val request = MedicamentoRequest(
+                    usuario_id = usuarioId,
+                    nome_remedio = nome,
+                    dosagem = dosagemTexto,
+                    horario_inicio = hora,
+                    frequencia_horas = frequencia,
+                    quantidade_total = qtd
+                )
+
+                RetrofitClient.instance.salvarMedicamento(request).enqueue(object : Callback<Void> {
+                    override fun onResponse(call: Call<Void>, response: Response<Void>) { carregarDadosGeral() }
+                    override fun onFailure(call: Call<Void>, t: Throwable) {}
+                })
             }
-        })
+        }
     }
 
-    private fun tomarRemedio(id: Int) {
-        RetrofitClient.instance.tomarMedicamento(id).enqueue(object : Callback<TomarMedicamentoResponse> {
-            override fun onResponse(call: Call<TomarMedicamentoResponse>, response: Response<TomarMedicamentoResponse>) {
-                if (response.isSuccessful) {
-                    Toast.makeText(applicationContext, "Tomado!", Toast.LENGTH_SHORT).show()
-                    carregarDadosGeral()
+    private fun confirmarTomarRemedio(med: Medicamento) {
+        if (!med.tomado) {
+            AlertDialog.Builder(this)
+                .setTitle("Confirmar Dose")
+                .setMessage("Deseja marcar '${med.nome_remedio}' como tomado?\nO estoque será reduzido.")
+                .setPositiveButton("Sim, tomei!") { _, _ -> atualizarStatusRemedio(med.id, true) }
+                .setNegativeButton("Ainda não", null)
+                .show()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("Desfazer Dose?")
+                .setMessage("Deseja desmarcar esta dose?\n(O estoque no servidor não será devolvido automaticamente nesta versão).")
+                .setPositiveButton("Desmarcar") { _, _ -> atualizarStatusRemedio(med.id, false) }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+    }
+
+    private fun atualizarStatusRemedio(id: Int, status: Boolean) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            database.medicamentoDao().atualizarStatusTomado(id, status)
+            withContext(Dispatchers.Main) { carregarDadosGeral() }
+        }
+
+        if (status) {
+            RetrofitClient.instance.tomarMedicamento(id).enqueue(object : Callback<TomarMedicamentoResponse> {
+                override fun onResponse(call: Call<TomarMedicamentoResponse>, response: Response<TomarMedicamentoResponse>) {}
+                override fun onFailure(call: Call<TomarMedicamentoResponse>, t: Throwable) {}
+            })
+        }
+    }
+
+    // 🔥 NOVA LÓGICA DE PRESENÇA NO MÉDICO
+    private fun confirmarPresencaConsulta(consulta: ConsultaModel) {
+        if (!consulta.realizada) {
+            AlertDialog.Builder(this)
+                .setTitle("Confirmar Presença")
+                .setMessage("Você compareceu à consulta com ${consulta.medico}?")
+                .setPositiveButton("Sim, eu fui!") { _, _ ->
+                    atualizarStatusConsulta(consulta.id ?: 0, true)
                 }
+                .setNegativeButton("Ainda não", null)
+                .show()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("Desfazer Presença?")
+                .setMessage("Deseja desmarcar a presença nesta consulta?")
+                .setPositiveButton("Desmarcar") { _, _ ->
+                    atualizarStatusConsulta(consulta.id ?: 0, false)
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+    }
+
+    private fun atualizarStatusConsulta(id: Int, status: Boolean) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            database.consultaDao().atualizarStatusRealizada(id, status)
+            withContext(Dispatchers.Main) {
+                buscarConsultas() // 🔥 Recarrega a tela de consultas
             }
-            override fun onFailure(call: Call<TomarMedicamentoResponse>, t: Throwable) {
-                Log.e("AGENDA_DEBUG", "Erro tomar: ${t.message}")
-            }
-        })
+        }
     }
 
     private fun excluirDose(id: Int) {
-        // 1. Precisamos identificar o item na nossa lista atual para saber se é Medicamento ou Consulta
         val itemParaExcluir = listaMedicamentos.find { it.id == id }
 
         if (itemParaExcluir != null) {
-            // É um MEDICAMENTO: chama a rota de remédios
+            lifecycleScope.launch(Dispatchers.IO) {
+                database.medicamentoDao().deletar(id)
+                withContext(Dispatchers.Main) { carregarDadosGeral() }
+            }
             RetrofitClient.instance.excluirMedicamento(id).enqueue(object : Callback<Void> {
-                override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                    if (response.isSuccessful) {
-                        Toast.makeText(this@AgendaActivity, "Remédio removido! 💊", Toast.LENGTH_SHORT).show()
-                        carregarDadosGeral() // Recarrega a lista híbrida
-                    }
-                }
-                override fun onFailure(call: Call<Void>, t: Throwable) {
-                    Log.e("AGENDA_DEBUG", "Erro ao excluir remédio: ${t.message}")
-                }
+                override fun onResponse(call: Call<Void>, response: Response<Void>) { Toast.makeText(this@AgendaActivity, "Remédio removido!", Toast.LENGTH_SHORT).show() }
+                override fun onFailure(call: Call<Void>, t: Throwable) {}
             })
         } else {
-            // Não achou nos medicamentos? Então é uma CONSULTA: chama a rota de médicos
+            lifecycleScope.launch(Dispatchers.IO) {
+                database.consultaDao().deletar(id)
+                withContext(Dispatchers.Main) { buscarConsultas() }
+            }
             RetrofitClient.instance.deletarConsulta(id).enqueue(object : Callback<Void> {
-                override fun onResponse(call: Call<Void>, response: Response<Void>) {
-                    if (response.isSuccessful) {
-                        Toast.makeText(this@AgendaActivity, "Consulta desmarcada! 🩺", Toast.LENGTH_SHORT).show()
-                        carregarDadosGeral()
-                    } else {
-                        // Se der erro P2025 no servidor, o log vai aparecer aqui
-                        Log.e("AGENDA_DEBUG", "Erro servidor: ${response.code()}")
-                    }
-                }
-                override fun onFailure(call: Call<Void>, t: Throwable) {
-                    Log.e("AGENDA_DEBUG", "Erro ao excluir consulta: ${t.message}")
-                }
+                override fun onResponse(call: Call<Void>, response: Response<Void>) { Toast.makeText(this@AgendaActivity, "Consulta desmarcada!", Toast.LENGTH_SHORT).show() }
+                override fun onFailure(call: Call<Void>, t: Throwable) {}
             })
         }
     }
@@ -335,5 +554,20 @@ class AgendaActivity : AppCompatActivity() {
         editDataConsulta.text.clear()
         editHoraConsulta.text.clear()
         radioFrequencia.clearCheck()
+    }
+
+    private fun agendarNotificacaoAndroid(id: Int, titulo: String, mensagem: String, tempoEmMilisegundos: Long) {
+        try {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            val intent = android.content.Intent(this, com.example.gerokernel.utils.LembreteReceiver::class.java).apply {
+                putExtra("TITULO", titulo)
+                putExtra("MENSAGEM", mensagem)
+                putExtra("ID", id)
+            }
+            val pendingIntent = android.app.PendingIntent.getBroadcast(
+                this, id, intent, android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, tempoEmMilisegundos, pendingIntent)
+        } catch (e: Exception) { }
     }
 }

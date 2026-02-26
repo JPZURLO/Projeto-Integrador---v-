@@ -1,4 +1,4 @@
-package com.exemplo.gerokernel.model
+package com.example.gerokernel.model
 
 data class LoginRequest(
     val email: String,

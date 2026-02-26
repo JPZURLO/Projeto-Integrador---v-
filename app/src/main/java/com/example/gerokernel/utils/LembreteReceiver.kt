@@ -2,7 +2,6 @@ package com.example.gerokernel.utils
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,52 +9,40 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.example.gerokernel.R
 
-// IMPORTANTE: Garantir que a classe da Agenda seja reconhecida
-import com.example.gerokernel.activities.AgendaActivity
-
 class LembreteReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
 
-        val medico = intent.getStringExtra("MEDICO") ?: "Consulta"
-        val especialidade = intent.getStringExtra("ESPECIALIDADE") ?: "Saúde"
-        val id = intent.getIntExtra("ID_CONSULTA", 0)
+        // 🔥 A MÁGICA: Agora ele lê exatamente o que a AgendaActivity mandou!
+        val titulo = intent.getStringExtra("TITULO") ?: "Lembrete GeroKernel"
+        val mensagem = intent.getStringExtra("MENSAGEM") ?: "Você tem um aviso na sua agenda!"
+        val idNotificacao = intent.getIntExtra("ID", (System.currentTimeMillis() % 10000).toInt())
 
-        val channelId = "canal_agenda_gerokernel"
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
+        // Cria o Canal de Notificação (Obrigatório nas versões novas do Android)
+        val channelId = "gerokernel_alertas"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Lembretes de Consulta",
+                "Lembretes da Agenda",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificações de consultas agendadas"
-                enableVibration(true)
+                description = "Avisos de Remédios e Consultas Médicas"
             }
             notificationManager.createNotificationChannel(channel)
         }
 
-        // CORREÇÃO: Referência explícita para evitar o erro 'Unresolved reference'
-        val intentApp = Intent(context, AgendaActivity::class.java)
+        // Monta a notificação na tela do Idoso
+        val builder = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.ic_launcher_foreground) // ⚠️ Troque pelo ícone do seu App se quiser
+            .setContentTitle(titulo)
+            .setContentText(mensagem)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(mensagem)) // Pra mensagens longas não cortarem
+            .setPriority(NotificationCompat.PRIORITY_HIGH) // Faz a notificação pular no topo da tela
+            .setAutoCancel(true) // Some quando o idoso clica
 
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            id,
-            intentApp,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("⏰ Hora da Consulta")
-            .setContentText("Consulta com $medico ($especialidade)")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-            .build()
-
-        notificationManager.notify(id, notification)
+        // Dispara o alerta!
+        notificationManager.notify(idNotificacao, builder.build())
     }
 }

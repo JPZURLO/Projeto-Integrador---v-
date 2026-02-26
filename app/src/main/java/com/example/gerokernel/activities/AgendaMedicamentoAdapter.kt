@@ -16,7 +16,8 @@ import java.util.Locale
 
 class AgendaMedicamentoAdapter(
     private val context: Context,
-    private val onTomarClick: (Int) -> Unit,
+    private val onMedicamentoCheck: (Medicamento) -> Unit, // 🔥 Separamos os cliques!
+    private val onConsultaCheck: (ConsultaModel) -> Unit,  // 🔥
     private val onExcluirClick: (Int) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -48,8 +49,8 @@ class AgendaMedicamentoAdapter(
 
     override fun getItemCount() = listaGeral.size
 
-    // ViewHolder para Medicamentos
     inner class MedicamentoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val cardFundo: com.google.android.material.card.MaterialCardView = view as com.google.android.material.card.MaterialCardView
         val txtHora: TextView = view.findViewById(R.id.txtHora)
         val txtNome: TextView = view.findViewById(R.id.txtNomeRemedio)
         val txtDosagem: TextView = view.findViewById(R.id.txtDosagem)
@@ -62,45 +63,84 @@ class AgendaMedicamentoAdapter(
             txtNome.text = item.nome_remedio
             val qtd = item.quantidade_total ?: 0
             txtDosagem.text = "${item.dosagem} • Restam: $qtd"
-            txtDosagem.setTextColor(if (qtd <= 10) Color.RED else Color.GRAY)
+
+            val agora = System.currentTimeMillis()
+            val horaDoRemedio = item.horario_agendado?.time ?: 0L
+            val jaTomou = item.tomado
+
+            if (jaTomou) {
+                cardFundo.setCardBackgroundColor(Color.parseColor("#E8F5E9"))
+                txtHora.setTextColor(Color.parseColor("#2E7D32"))
+                btnTomar.setColorFilter(Color.parseColor("#A5D6A7"))
+            } else if (horaDoRemedio < agora) {
+                cardFundo.setCardBackgroundColor(Color.parseColor("#FFEBEE"))
+                txtHora.setTextColor(Color.parseColor("#D32F2F"))
+                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+            } else {
+                cardFundo.setCardBackgroundColor(Color.WHITE)
+                txtHora.setTextColor(Color.parseColor("#0288D1"))
+                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+            }
+
+            txtDosagem.setTextColor(if (qtd <= 10 && !jaTomou) Color.RED else Color.GRAY)
 
             btnTomar.visibility = View.VISIBLE
-            btnTomar.setOnClickListener { onTomarClick(item.id) }
+            btnTomar.setOnClickListener { onMedicamentoCheck(item) }
 
-            // Excluir Medicamento
             btnExcluir.setOnClickListener {
                 confirmarExclusao(item.id, "este medicamento")
             }
         }
     }
 
-    // ViewHolder para Consultas (CORRIGIDO COM EXCLUIR)
     inner class ConsultaViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val cardFundo: com.google.android.material.card.MaterialCardView = view as com.google.android.material.card.MaterialCardView
         val txtHora: TextView = view.findViewById(R.id.txtHora)
         val txtNome: TextView = view.findViewById(R.id.txtNomeRemedio)
         val txtInfo: TextView = view.findViewById(R.id.txtDosagem)
         val btnTomar: ImageButton = view.findViewById(R.id.btnTomar)
-        val btnExcluir: ImageButton = view.findViewById(R.id.btnExcluir) // Puxando o botão do XML
+        val btnExcluir: ImageButton = view.findViewById(R.id.btnExcluir)
 
         fun bind(item: ConsultaModel) {
-            // Pega a hora da string "16/02/2026 19:55"
             txtHora.text = item.dataHora.split(" ").lastOrNull() ?: "--:--"
             txtNome.text = "MÉDICO: ${item.medico}"
             txtInfo.text = "Especialidade: ${item.especialidade}"
-            txtInfo.setTextColor(Color.parseColor("#2E7D32"))
 
-            btnTomar.visibility = View.GONE // Médico não se toma kkk
+            val formatoConsulta = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val horaDaConsulta = try { formatoConsulta.parse(item.dataHora)?.time ?: 0L } catch(e:Exception){ 0L }
+            val agora = System.currentTimeMillis()
+            val jaFoi = item.realizada
 
-            // CONFIGURAÇÃO DO CLIQUE DE EXCLUIR PARA MÉDICO
+            // 🔥 O SEMÁFORO DA CONSULTA!
+            if (jaFoi) {
+                // FOI NA CONSULTA = VERDE
+                cardFundo.setCardBackgroundColor(Color.parseColor("#E8F5E9"))
+                txtHora.setTextColor(Color.parseColor("#2E7D32"))
+                txtInfo.setTextColor(Color.parseColor("#2E7D32"))
+                btnTomar.setColorFilter(Color.parseColor("#A5D6A7"))
+            } else if (horaDaConsulta > 0L && horaDaConsulta < agora) {
+                // FALTOU NA CONSULTA (ATRASADO) = VERMELHO
+                cardFundo.setCardBackgroundColor(Color.parseColor("#FFEBEE"))
+                txtHora.setTextColor(Color.parseColor("#D32F2F"))
+                txtInfo.setTextColor(Color.parseColor("#D32F2F"))
+                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+            } else {
+                // CONSULTA NO FUTURO = BRANCO
+                cardFundo.setCardBackgroundColor(Color.WHITE)
+                txtHora.setTextColor(Color.parseColor("#0288D1"))
+                txtInfo.setTextColor(Color.parseColor("#2E7D32"))
+                btnTomar.setColorFilter(Color.parseColor("#2E7D32"))
+            }
+
+            btnTomar.visibility = View.VISIBLE // Agora o botão aparece pro médico também!
+            btnTomar.setOnClickListener { onConsultaCheck(item) }
+
             btnExcluir.setOnClickListener {
-                item.id?.let { id ->
-                    confirmarExclusao(id, "esta consulta")
-                }
+                item.id?.let { id -> confirmarExclusao(id, "esta consulta") }
             }
         }
     }
 
-    // Função auxiliar para evitar repetição de código (DevOps style kkk)
     private fun confirmarExclusao(id: Int, tipo: String) {
         androidx.appcompat.app.AlertDialog.Builder(context)
             .setTitle("Excluir Agendamento")

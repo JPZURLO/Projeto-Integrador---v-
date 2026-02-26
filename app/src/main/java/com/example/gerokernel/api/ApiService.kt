@@ -22,7 +22,7 @@ interface ApiService {
     fun cadastrarUsuario(@Body user: User): Call<Void>
 
     @POST("login")
-    fun fazerLogin(@Body request: LoginRequest): Call<User>
+    fun fazerLogin(@Body request: com.example.gerokernel.model.LoginRequest): Call<User>
     data class LoginRequest(val email: String, val senha: String)
 
     // ... suas outras rotas ...

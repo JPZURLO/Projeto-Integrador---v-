@@ -14,6 +14,6 @@ data class ConsultaModel(
 
     val local: String? = "Clínica Geral",
 
-    // El ID es deixa al final com a opcional per evitar errors en crear l'objecte
-    val id: Int? = null
+    val id: Int? = null,
+    var realizada: Boolean = false // 🔥 NOVO: Marca se já foi ao médico
 )
