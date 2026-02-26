@@ -8,41 +8,47 @@
 
     <View
         android:id="@+id/header"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="100dp"
         android:background="#D32F2F"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="FICHA MÉDICA"
-        android:textColor="#FFF"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/header"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/header" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
         android:id="@+id/btnVoltar"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_launcher_foreground"
-        app:tint="#FFF"
+        android:src="@drawable/outline_arrow_back_24"
+        app:tint="#FFFFFF"
         android:layout_marginStart="16dp"
         app:layout_constraintBottom_toBottomOf="@id/header"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@id/header" />
 
+    <TextView
+        android:id="@+id/txtTitulo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="FICHA MÉDICA"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/header"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/header" />
+
     <ScrollView
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@id/btnLigarFilho"
-        app:layout_constraintTop_toBottomOf="@id/header">
+        android:clipToPadding="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header"
+        app:layout_constraintBottom_toTopOf="@id/btnLigarFilho">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -54,35 +60,29 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
                 android:layout_marginBottom="16dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <ImageView
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:src="@drawable/ic_launcher_foreground"
-                        app:tint="#D32F2F"/>
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    android:padding="20dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_marginStart="16dp">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tipo Sanguíneo"/>
-                        <TextView
-                            android:id="@+id/txtTipoSanguineo"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Carregando..."
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            android:textColor="#D32F2F"/>
-                    </LinearLayout>
+                        android:text="🩸 Tipo Sanguíneo"
+                        android:textStyle="bold"
+                        android:textColor="#D32F2F"/>
+
+                    <TextView
+                        android:id="@+id/txtTipoSanguineo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Carregando..."
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="8dp"
+                        android:textColor="#D32F2F"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -91,17 +91,20 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp"
                 android:layout_marginBottom="16dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
+                    android:padding="20dp"
                     android:orientation="vertical">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⚠️ ALERGIAS"
+                        android:text="⚠️ Alergias"
                         android:textStyle="bold"
                         android:textColor="#D32F2F"/>
+
                     <TextView
                         android:id="@+id/txtAlergias"
                         android:layout_width="wrap_content"
@@ -109,7 +112,7 @@
                         android:text="--"
                         android:textSize="18sp"
                         android:layout_marginTop="8dp"
-                        android:textColor="#333"/>
+                        android:textColor="#333333"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -117,25 +120,28 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="12dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="16dp"
+                    android:padding="20dp"
                     android:orientation="vertical">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="💊 USO CONTÍNUO E ESTOQUE"
+                        android:text="💊 Uso Contínuo e Estoque"
                         android:textStyle="bold"
                         android:textColor="#1976D2"/>
+
                     <TextView
                         android:id="@+id/txtRemedios"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Carregando lista..."
-                        android:textSize="16sp"
+                        android:textSize="18sp"
                         android:layout_marginTop="8dp"
-                        android:textColor="#333"/>
+                        android:textColor="#333333"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -143,7 +149,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnLigarFilho"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="70dp"
         android:text="📞 LIGAR EMERGÊNCIA"
         android:textSize="18sp"
@@ -151,6 +157,8 @@
         app:backgroundTint="#D32F2F"
         app:cornerRadius="35dp"
         android:layout_margin="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

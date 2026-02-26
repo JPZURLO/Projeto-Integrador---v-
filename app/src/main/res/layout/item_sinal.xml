@@ -59,12 +59,5 @@
             android:gravity="center"
             android:textColor="#1565C0"/>
 
-        <ImageView
-            android:id="@+id/imgStatus"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_launcher_foreground"
-            app:tint="#2E7D32"/>
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

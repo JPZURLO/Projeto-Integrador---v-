@@ -46,13 +46,7 @@
                 android:textColor="#757575"/>
         </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/btnTomar"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_launcher_foreground"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="#2E7D32"/>
+
 
         <ImageButton
             android:id="@+id/btnExcluir"

@@ -8,39 +8,44 @@
 
     <View
         android:id="@+id/headerBackground"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="100dp"
         android:background="#2E7D32"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageButton
+        android:id="@+id/btnVoltar"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/outline_arrow_back_24"
+        app:tint="#FFFFFF"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/headerBackground"
+        app:layout_constraintBottom_toBottomOf="@id/headerBackground"/>
+
     <TextView
+        android:id="@+id/txtTitulo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Sinais Vitais"
         android:textColor="#FFFFFF"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="12dp"
         app:layout_constraintStart_toEndOf="@id/btnVoltar"
-        app:layout_constraintTop_toTopOf="@id/btnVoltar"
-        app:layout_constraintBottom_toBottomOf="@id/btnVoltar" />
-
-    <ImageButton
-        android:id="@+id/btnVoltar"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:src="@drawable/ic_launcher_foreground"
-        app:tint="#FFFFFF"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="32dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="@id/headerBackground"
+        app:layout_constraintBottom_toBottomOf="@id/headerBackground" />
 
     <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:clipToPadding="false"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerBackground">
 
@@ -62,7 +67,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -76,14 +81,15 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:hint="Sistólica (120)"
+                            android:hint="Sistólica (Ex: 120)"
                             android:layout_marginEnd="8dp">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/editPressaoSys"
@@ -98,8 +104,8 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:hint="Diastólica (80)"
-                            android:layout_marginEnd="8dp">
+                            android:hint="Diastólica (Ex: 80)"
+                            android:layout_marginStart="4dp">
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/editPressaoDia"
                                 android:layout_width="match_parent"
@@ -107,30 +113,30 @@
                                 android:inputType="number"
                                 android:maxLength="3"/>
                         </com.google.android.material.textfield.TextInputLayout>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:hint="Glicose">
-                            <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/editGlicose"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:inputType="number"
-                                android:maxLength="3"/>
-                        </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
-                    <Button
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Glicose (mg/dL)">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editGlicose"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:maxLength="3"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnRegistrar"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="60dp"
                         android:text="REGISTRAR MEDIÇÃO"
-                        android:backgroundTint="#2E7D32"
+                        app:backgroundTint="#2E7D32"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="20dp"
                         app:cornerRadius="12dp"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -139,27 +145,24 @@
                 android:id="@+id/cardFeedback"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="12dp"
                 android:visibility="gone"
                 android:layout_marginBottom="16dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="16dp"
                     android:gravity="center_vertical">
-                    <ImageView
-                        android:id="@+id/iconFeedback"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:src="@drawable/ic_launcher_foreground"/>
+
                     <TextView
                         android:id="@+id/txtMensagemFeedback"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Resultado"
+                        android:text="⚠️ Pressão levemente alta. Beba água!"
                         android:textSize="16sp"
                         android:textStyle="bold"
-                        android:layout_marginStart="12dp"/>
+                        android:textColor="#D32F2F"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -169,12 +172,14 @@
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
                 app:cardBackgroundColor="#E3F2FD"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="24dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -182,20 +187,24 @@
                         android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="#1565C0"/>
+
                     <TextView
                         android:id="@+id/txtResumoTexto"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="..."
+                        android:text="Tudo sob controle hoje!"
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="#333"/>
+                        android:layout_marginTop="4dp"
+                        android:textColor="#333333"/>
+
                     <TextView
                         android:id="@+id/txtDicaDoDia"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="..."
-                        android:layout_marginTop="4dp"/>
+                        android:text="Lembre-se da caminhada leve às 17h."
+                        android:layout_marginTop="8dp"
+                        android:textColor="#555555"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -205,37 +214,45 @@
                 android:orientation="horizontal"
                 android:gravity="center"
                 android:layout_marginBottom="16dp">
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFiltro7"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="7 Dias"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_marginEnd="4dp"/>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFiltro30"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="30 Dias"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_marginEnd="4dp"/>
+                    android:layout_marginHorizontal="4dp"/>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFiltroTodos"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Tudo"
                     style="@style/Widget.MaterialComponents.Button"
-                    app:backgroundTint="#2E7D32"/>
+                    app:backgroundTint="#2E7D32"
+                    android:layout_marginStart="4dp"/>
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExportarPdf"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="📄  GERAR RELATÓRIO PARA MÉDICO"
-                android:layout_marginBottom="16dp"
-                android:textSize="14sp"
+                android:layout_height="60dp"
+                android:text="📄 GERAR RELATÓRIO PARA MÉDICO"
+                android:layout_marginBottom="24dp"
+                android:textSize="15sp"
                 android:textStyle="bold"
+                app:cornerRadius="12dp"
                 app:backgroundTint="#1565C0"/>
 
             <TextView
@@ -245,13 +262,13 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#333333"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="12dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingHorizontal="12dp"
-                android:layout_marginBottom="4dp">
+                android:layout_marginBottom="8dp">
                 <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Data" android:textStyle="bold"/>
                 <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Pressão" android:textStyle="bold" android:gravity="center"/>
                 <TextView android:layout_width="0dp" android:layout_weight="0.8" android:layout_height="wrap_content" android:text="Glicose" android:textStyle="bold" android:gravity="center"/>
@@ -262,7 +279,8 @@
                 android:id="@+id/recyclerHistorico"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"/>
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="32dp"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
